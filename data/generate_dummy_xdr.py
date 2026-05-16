@@ -324,6 +324,21 @@ def generate_records(fields: list[FieldSpec], count: int = 120) -> Iterable[dict
                     "DetachRequest_Direction": "0",
                 }
             )
+        elif 110 <= index < 118:
+            row.update(
+                {
+                    "MME_ID": "104",
+                    "First_eNB_ID": "20014",
+                    "Last_eNB_ID": "20014",
+                    "emm_error_Message": "93",
+                    "emm_error_Time": event_time,
+                    "emm_error_Cause": "15",
+                    "initial_core_duration": "2200000",
+                    "auth_success_flag": "0",
+                    "location_success_flag": "0",
+                }
+            )
+            _mark_failure(row, interface="5", message=93, cause=15, event_time=event_time)
 
         yield row
 
@@ -375,6 +390,7 @@ def write_outputs(fields: list[FieldSpec], records: list[dict[str, str]]) -> Non
                 "- S6a authentication failures around records 70-83, `Cause=5001`",
                 "- S11 bearer failures around records 90-99, `Cause=64`, concentrated on `SGW_ID=305`",
                 "- Normal Detach cleanup samples around records 104-109",
+                "- NAS-EMM signaling failures around records 110-117, `Cause=15`, concentrated on `MME_ID=104` and `eNB_ID=20014`",
                 "",
                 "The pipe-delimited mirror file has a header row and is easier to edit by hand.",
                 "",

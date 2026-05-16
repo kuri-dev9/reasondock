@@ -14,5 +14,6 @@
 - S6a authentication failures around records 70-83, `Cause=5001`
 - S11 bearer failures around records 90-99, `Cause=64`, concentrated on `SGW_ID=305`
 - Normal Detach cleanup samples around records 104-109
+- NAS-EMM signaling failures around records 110-117, `Cause=15`, concentrated on `MME_ID=104` and `eNB_ID=20014`
 
 The pipe-delimited mirror file has a header row and is easier to edit by hand.

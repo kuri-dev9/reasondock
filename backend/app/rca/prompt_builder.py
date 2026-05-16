@@ -38,7 +38,10 @@ Strict grounding rules:
 
 Return the answer in Korean.
 
-Output format:
+Required output format:
+
+Use exactly the following headings. Do not add other top-level headings such as "상세 분석" or "데이터 요약".
+Keep the answer concise: maximum 12 bullets total outside the "데이터 정합성 확인" section.
 
 ## RCA 결론
 - 가장 가능성 높은 Root Cause:
@@ -52,6 +55,8 @@ Output format:
 - 시간대 이상 여부:
 
 ## 장애 메커니즘 추정
+- Only explain mechanisms supported by top_failures, affected_equipment, timeline, or rca_candidates.
+- Do not mention interfaces that are not present in top_failures.
 
 ## 확인 필요 항목
 

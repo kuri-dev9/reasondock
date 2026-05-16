@@ -39,10 +39,18 @@ async def _save_upload(file: UploadFile, target: Path) -> int:
 async def _generate_llm_rca(model: str, summary: dict) -> str | None:
     prompt = build_rca_prompt(summary)
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             response = await client.post(
                 f"{settings.ollama_base_url}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False},
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 1400,
+                    },
+                },
             )
             response.raise_for_status()
             content = response.json().get("response", "").strip()

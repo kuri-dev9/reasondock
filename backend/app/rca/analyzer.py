@@ -181,8 +181,13 @@ def build_candidates(summary: dict[str, Any]) -> list[dict[str, Any]]:
     fail_total = overall["fail"]
     candidates: list[dict[str, Any]] = []
     top_failures = summary["top_failures"]
+    added_causes: set[str] = set()
 
     def add(cause: str, confidence: float, evidence: list[str]) -> None:
+        evidence_key = f"{cause}|{evidence[0] if evidence else ''}"
+        if evidence_key in added_causes:
+            return
+        added_causes.add(evidence_key)
         candidates.append(
             {
                 "rank": 0,
@@ -202,23 +207,27 @@ def build_candidates(summary: dict[str, Any]) -> list[dict[str, Any]]:
                 0.55 + ratio * 0.4,
                 [f"Top failure is {key} ({top['count']} records, {ratio:.1%} of failures)."],
             )
+
+    for failure in top_failures[:5]:
+        key = failure["key"]
+        ratio = failure["count"] / fail_total if fail_total else 0
         if key.startswith("S6a_Diameter"):
             add(
                 "HSS_authentication_failure",
-                0.5 + ratio * 0.35,
-                [f"S6a Diameter failure dominates: {key} ({top['count']} records)."],
+                0.35 + ratio * 0.35,
+                [f"S6a Diameter failure observed: {key} ({failure['count']} records, {ratio:.1%} of failures)."],
             )
         if key.startswith("S11_GTPv2C"):
             add(
                 "SGW_PGW_bearer_issue",
-                0.5 + ratio * 0.35,
-                [f"S11 GTPv2C failure is prominent: {key} ({top['count']} records)."],
+                0.35 + ratio * 0.35,
+                [f"S11 GTPv2C failure observed: {key} ({failure['count']} records, {ratio:.1%} of failures)."],
             )
         if "S1MME_NAS-EMM" in key:
             add(
                 "NAS_signaling_issue",
-                0.5 + ratio * 0.3,
-                [f"NAS-EMM first error appears in top failures: {key}."],
+                0.35 + ratio * 0.3,
+                [f"NAS-EMM first error observed: {key} ({failure['count']} records, {ratio:.1%} of failures)."],
             )
 
     for equipment_type, cause in [

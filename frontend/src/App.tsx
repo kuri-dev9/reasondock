@@ -233,7 +233,9 @@ function App() {
           response.message as Message,
         ]);
       }
-      await loadConversations();
+      setStreaming(false);
+      setStreamingContent('');
+      loadConversations();
     } finally {
       setStreaming(false);
       setStreamingContent('');
