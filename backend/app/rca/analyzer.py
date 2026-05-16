@@ -270,82 +270,94 @@ def build_candidates(summary: dict[str, Any]) -> list[dict[str, Any]]:
 def render_markdown(summary: dict[str, Any]) -> str:
     overall = summary["overall"]
     candidates = summary.get("rca_candidates", [])
-    top = candidates[0] if candidates else None
-    top_failures = [item["key"] for item in summary["top_failures"][:5]]
-    affected = summary["affected_equipment"]
-    top_mme = affected["mme"][0] if affected["mme"] else None
-    top_enb = affected["enb"][0] if affected["enb"] else None
-    top_sgw = affected["sgw"][0] if affected["sgw"] else None
+    period = summary["file_info"].get("period", {})
+
+    def format_period(epoch_microseconds: int | None) -> str:
+        if epoch_microseconds is None:
+            return "N/A"
+        dt = datetime.fromtimestamp(epoch_microseconds / 1_000_000, tz=timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
+
+    def split_failure_key(key: str) -> tuple[str, str, str]:
+        parts = key.split("|", 2)
+        if len(parts) == 3:
+            return parts[0], parts[1], parts[2]
+        if len(parts) == 2:
+            return parts[0], parts[1], ""
+        return key, "", ""
+
+    def pct(value: float) -> str:
+        return f"{value:.2%}"
+
     lines = [
-        "## RCA 분석 결과",
+        "## xDR 통계 요약",
         "",
         f"- 파일: `{summary['file_info']['filename']}`",
-        f"- 총 레코드: {overall['total']:,}",
-        f"- 시도/성공/실패/절단: {overall['attempt']:,} / {overall['success']:,} / {overall['fail']:,} / {overall['drop']:,}",
-        f"- 실패율: {overall['fail_rate']:.2%}",
+        f"- 기간: {format_period(period.get('start_us'))} ~ {format_period(period.get('end_us'))}",
+        f"- 총 레코드 / 시도 / 성공 / 실패 / 절단: {overall['total']:,} / {overall['attempt']:,} / {overall['success']:,} / {overall['fail']:,} / {overall['drop']:,}",
+        f"- 실패율 / 절단율: {pct(overall['fail_rate'])} / {pct(overall['drop_rate'])}",
         "",
     ]
-    if top:
-        lines.extend(
-            [
-                f"### 1순위 후보: `{top['suspected_cause']}`",
-                "",
-                f"- 신뢰도: {top['confidence']:.2f}",
-                *[f"- 근거: {item}" for item in top["evidence"]],
-                "",
-            ]
-        )
 
-    lines.append("### Top Failures")
+    lines.extend(
+        [
+            "## 실패 패턴 Top 5",
+            "",
+            "| 순위 | Interface | Message | Cause | 건수 | 비율 |",
+            "|-----|-----------|---------|-------|------|------|",
+        ]
+    )
     if summary["top_failures"]:
-        for item in summary["top_failures"][:5]:
-            lines.append(f"- `{item['key']}`: {item['count']:,}")
+        for rank, item in enumerate(summary["top_failures"][:5], start=1):
+            interface, message, cause = split_failure_key(item["key"])
+            ratio = item["count"] / overall["fail"] if overall["fail"] else 0.0
+            lines.append(
+                f"| {rank} | `{interface}` | `{message}` | `{cause}` | {item['count']:,} | {pct(ratio)} |"
+            )
     else:
-        lines.append("- 실패 패턴 없음")
+        lines.append("| - | - | - | - | 0 | 0.00% |")
 
-    lines.extend(["", "### Affected Equipment"])
+    lines.extend(
+        [
+            "",
+            "## 영향 장비",
+            "",
+            "| 유형 | ID | 실패 건수 |",
+            "|------|----|----------|",
+        ]
+    )
     for label, entries in summary["affected_equipment"].items():
-        rendered = ", ".join(f"{item['key']}({item['count']})" for item in entries) or "없음"
-        lines.append(f"- {label.upper()}: {rendered}")
+        equipment_type = label.upper()
+        for item in entries[:3]:
+            lines.append(f"| {equipment_type} | `{item['key']}` | {item['count']:,} |")
+    if not any(summary["affected_equipment"].values()):
+        lines.append("| - | - | 0 |")
 
-    lines.extend(["", "### 장애 메커니즘 추정"])
-    if top and top["suspected_cause"] == "transport_reachability":
-        enb_text = f"eNB {top_enb['key']}" if top_enb else "상위 eNB"
-        mme_text = f"MME {top_mme['key']}" if top_mme else "상위 MME"
-        lines.append(
-            f"- `{summary['top_failures'][0]['key']}`가 최다 실패로 나타나 {enb_text}와 {mme_text} 사이의 S1AP/SCTP 또는 전송망 도달성 문제 가능성이 높습니다."
-        )
+    lines.extend(
+        [
+            "",
+            "## RCA 후보",
+            "",
+            "| 순위 | 후보 원인 | 신뢰도 | 근거 |",
+            "|------|---------|--------|------|",
+        ]
+    )
+    if candidates:
+        for candidate in candidates:
+            evidence = "<br>".join(candidate.get("evidence", [])) or "-"
+            lines.append(
+                f"| {candidate['rank']} | `{candidate['suspected_cause']}` | {candidate['confidence']:.2f} | {evidence} |"
+            )
     else:
-        lines.append("- 상위 실패 패턴과 장비 집중도를 기준으로 원인 후보를 좁혀야 합니다.")
-    if any(key.startswith("S6a_Diameter") for key in top_failures):
-        lines.append("- S6a Diameter 오류가 동반되어 HSS/AuC 인증 구간 상태 확인이 필요합니다.")
-    if any(key.startswith("S11_GTPv2C") for key in top_failures):
-        sgw_text = f"SGW {top_sgw['key']}" if top_sgw else "상위 SGW"
-        lines.append(f"- S11 GTPv2C 오류가 동반되어 {sgw_text} 및 bearer 제어 절차 확인이 필요합니다.")
-    if any("NAS-EMM" in key for key in top_failures):
-        lines.append("- NAS-EMM 오류가 관찰되어 Attach/TAU/Service Request 절차의 NAS cause와 단말 상태 확인이 필요합니다.")
+        lines.append("| - | - | - | - |")
 
-    lines.extend(["", "### 확인 권고 사항"])
-    if top_mme and top_enb:
-        lines.append(f"- MME `{top_mme['key']}`와 eNB `{top_enb['key']}` 구간의 SCTP association, 재전송, heartbeat timeout, packet loss를 확인하세요.")
-    if top_mme:
-        lines.append(f"- MME `{top_mme['key']}`의 CPU/메모리/세션 처리량과 S1AP timeout 로그를 같은 시간대 기준으로 확인하세요.")
-    if top_enb:
-        lines.append(f"- eNB `{top_enb['key']}`의 S1 interface alarm, backhaul 품질, SCTP peer 상태를 확인하세요.")
-    if any(key.startswith("S6a_Diameter") for key in top_failures):
-        lines.append("- HSS/AuC 연동 상태, Diameter peer 상태, AuthenticationInformation/UpdateLocation 응답 지연을 확인하세요.")
-    if any(key.startswith("S11_GTPv2C") for key in top_failures):
-        lines.append("- SGW/PGW의 S11 peer 상태와 Create/Modify Bearer 실패 cause 분포를 확인하세요.")
-    if any("NAS-EMM" in key for key in top_failures):
-        lines.append("- NAS-EMM cause code mapping을 확보해 `MESSAGE_93|CAUSE_15`의 실제 의미를 확인하세요.")
-
-    lines.extend(["", "### 즉시 조치 사항"])
-    lines.append("- 최다 실패 장비 조합부터 우선 점검하고, 동일 시간대 장비 로그와 인터페이스 counter를 대조하세요.")
-    lines.append("- S1AP TIMEOUT이 지속되면 MME-eNB 전송 경로의 packet loss/latency와 SCTP 재전송률을 먼저 확인하세요.")
-    lines.append("- 장애 범위가 특정 장비에 국한되는지 확인하기 위해 인접 MME/eNB/SGW와 실패율을 비교하세요.")
-
-    lines.extend(["", "### 한계"])
-    lines.append("- message/cause 상세 매핑표가 없어서 `MESSAGE_*`, `CAUSE_*`의 의미는 원시 코드로 보존했습니다.")
-    lines.append("- 이 결과는 xDR 통계 기반 RCA이므로 최종 원인 확정에는 장비 로그, counter, 필요 시 packet trace 확인이 필요합니다.")
+    lines.extend(["", "## 시간대 이상", ""])
+    time_anomaly = summary["time_anomaly"]
+    lines.append(f"- 탐지 여부: {'있음' if time_anomaly['detected'] else '없음'}")
+    if time_anomaly["detected"]:
+        windows = ", ".join(item["bucket"] for item in time_anomaly["windows"])
+        lines.append(f"- 이상 구간: {windows}")
+    else:
+        lines.append("- 이상 구간: 없음")
 
     return "\n".join(lines)

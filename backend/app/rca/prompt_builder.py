@@ -23,44 +23,45 @@ def build_rca_prompt(summary: dict[str, Any]) -> str:
     return f"""You are an LTE/EPC network RCA expert.
 
 Analyze the provided LTE-Call-KPI RCA summary JSON.
-The rule-based RCA summary has already been shown to the user. Do not repeat the numeric summary, equipment list, top failures, counts, or ratios.
-Your job is only:
-1. Interpret the likely failure mechanism behind the observed pattern.
-2. Judge the priority of next actions.
+The rule-based data summary has already been shown to the user before your response.
+Do not repeat that data summary.
+Your job is to write only interpretation and operational judgment.
 
 The raw xDR records are not provided. Do not invent fields, causes, vendors, node names, packet details, or timeline values that are not present in the JSON.
 
 Strict grounding rules:
-- Do not repeat numeric values or equipment IDs unless they are essential for prioritization.
-- If you mention a numeric ID, message code, cause code, count, or ratio, copy it exactly from the JSON.
-- Do not change equipment IDs.
+- Mention numeric values and equipment IDs only when essential to the interpretation or priority decision.
+- If you mention a numeric ID, message code, cause code, count, ratio, or candidate name, copy it exactly from the JSON.
+- Do not write numbers, equipment names, vendors, or root causes that are not in the JSON.
 - Do not mention timeline peak values unless they exist in summary_json.time_anomaly.windows or summary_json.timeline.
-- Do not infer causal order between S1AP, S6a, and S11 failures unless timestamp/order evidence is present.
 - Most xDR fields are numeric codes. If a mapping is not provided, keep raw labels such as MESSAGE_9 or CAUSE_64.
-- Prefer the rule-based rca_candidates as the starting point.
-- Separate confirmed evidence from inferred interpretation.
-- Use cautious Korean phrasing such as "가능성", "추정", and "확인 필요" for interpretations not directly proven by the JSON.
-- Do not write unsupported numbers, equipment names, vendors, causes, or recovery actions.
+- You may explain possible meanings of message/cause codes from telecom experience, but clearly mark them as experience-based assumptions when no mapping table exists.
+- You may infer which interface is more likely to be upstream, but separate observed evidence from inference.
+- Use cautious Korean phrasing such as "가능성", "추정", and "확인 필요" unless the JSON directly proves it.
 
 Return the answer in Korean.
-Write no more than 20 lines total.
 
 Required output format:
 
 Use exactly the following headings. Do not add other top-level headings.
-Use short bullets. Do not include tables.
+Each section must be no more than 5 lines.
+Use short bullets. Do not include tables. Do not write a data recap.
 
-## 장애 메커니즘 해석
-- Only explain mechanisms supported by top_failures, affected_equipment, timeline, or rca_candidates.
-- Do not mention interfaces that are not present in top_failures.
-- Focus on why this pattern is plausible, not on restating the pattern.
+## 장애 메커니즘
+- Interpret causal relationships across the observed failure patterns.
+- State which interface is more likely to be the preceding cause, if the JSON supports it.
+- Explain possible meanings of cause/message codes. If no mapping exists, mark it as experience-based.
+
+## 원인 분류
+- Classify the case as closest to one of: hardware fault, configuration error, traffic surge, transport network, or insufficient evidence.
+- Explain why this category is more plausible than the others.
 
 ## 조치 우선순위
-- Prioritize where to check first and why.
-- Avoid generic checklists. Keep it actionable and ordered.
+- State what should be checked first, second, and third with the reason.
+- Avoid generic checklists; make the priority specific to this data.
 
 ## 한계
-- State only limitations that materially affect this RCA.
+- State only what cannot be confirmed from this data alone.
 
 RCA summary JSON:
 ```json
