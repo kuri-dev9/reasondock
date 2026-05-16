@@ -1,6 +1,21 @@
-import { RcaAnalyzeResponse, Reference, SearchResult } from './types';
+import { RcaAnalyzeResponse, RcaStreamEvent, Reference, SearchResult } from './types';
 
 const API_BASE = '/api';
+
+async function readError(res: Response, fallback: string) {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      const err = await res.json();
+      return err.detail || err.message || fallback;
+    } catch {}
+  }
+  const text = await res.text().catch(() => '');
+  if (text.trim().startsWith('<')) {
+    return `${fallback} (HTTP ${res.status}: 서버/프록시가 HTML 에러 페이지를 반환했습니다. nginx timeout 또는 backend 로그를 확인하세요.)`;
+  }
+  return text || `${fallback} (HTTP ${res.status})`;
+}
 
 export async function fetchConversations() {
   const res = await fetch(`${API_BASE}/conversations`);
@@ -47,8 +62,7 @@ export async function uploadAttachment(conversationId: number, file: File) {
     body: formData,
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || '파일 업로드 실패');
+    throw new Error(await readError(res, '파일 업로드 실패'));
   }
   return res.json();
 }
@@ -73,10 +87,30 @@ export async function uploadRcaFile(conversationId: number, file: File): Promise
     body: formData,
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || 'RCA 분석 실패');
+    throw new Error(await readError(res, 'RCA 분석 실패'));
   }
   return res.json();
+}
+
+export function streamRcaJob(
+  jobId: number,
+  onEvent: (event: RcaStreamEvent) => void,
+  onError: (err: string) => void,
+) {
+  const source = new EventSource(`${API_BASE}/rca/jobs/${jobId}/stream`);
+  source.onmessage = (event) => {
+    try {
+      onEvent(JSON.parse(event.data));
+    } catch {
+      onError('RCA 진행 이벤트를 해석하지 못했습니다.');
+      source.close();
+    }
+  };
+  source.onerror = () => {
+    onError('RCA 진행 스트림 연결이 끊겼습니다.');
+    source.close();
+  };
+  return source;
 }
 
 // Knowledge Base
@@ -93,8 +127,7 @@ export async function uploadKnowledgeDoc(file: File) {
     body: formData,
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || '파일 업로드 실패');
+    throw new Error(await readError(res, '파일 업로드 실패'));
   }
   return res.json();
 }
@@ -145,8 +178,7 @@ export async function importConversation(file: File) {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || '가져오기 실패');
+    throw new Error(await readError(res, '가져오기 실패'));
   }
   return res.json();
 }

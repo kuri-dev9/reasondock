@@ -82,3 +82,15 @@ export interface RcaAnalyzeResponse {
   result?: any;
   message?: Message;
 }
+
+export interface RcaStreamEvent {
+  job_id: number;
+  step: string;
+  progress: number;
+  status?: string;
+  content?: string;
+  token?: string;
+  message_id?: number;
+  message?: Message;
+  error?: string;
+}

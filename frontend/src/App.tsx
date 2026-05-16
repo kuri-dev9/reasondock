@@ -19,6 +19,7 @@ import {
   fetchAttachments,
   deleteAttachment,
   uploadRcaFile,
+  streamRcaJob,
   exportConversation,
   importConversation,
 } from './api';
@@ -41,6 +42,7 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeConvIdRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const rcaEventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     activeConvIdRef.current = activeConvId;
@@ -226,23 +228,69 @@ function App() {
 
     try {
       const response = await uploadRcaFile(convId, file);
-      if (response.message) {
-        setMessages((prev) => [
-          ...prev.filter((m) => !(m.conversation_id === convId && m.id === userMsg.id)),
-          userMsg,
-          response.message as Message,
-        ]);
-      }
+      let source: EventSource | null = null;
+      source = streamRcaJob(
+        response.job.id,
+        (event) => {
+          const visible = activeConvIdRef.current === convId;
+          if (event.step === 'queued' && visible) {
+            setStreamingContent('RCA 작업이 대기 중입니다...');
+          } else if (event.step === 'parsing' && visible) {
+            setStreamingContent('xDR 파일 파싱 중입니다...');
+          } else if (event.step === 'aggregating' && event.content && visible) {
+            setStreamingContent(`${event.content}\n\n---\n\n`);
+          } else if (event.step === 'llm' && visible) {
+            setStreamingContent((prev) => prev || 'LLM RCA 리포트 생성 중입니다...');
+          } else if (event.step === 'llm_token' && event.token && visible) {
+            setStreamingContent((prev) => prev + event.token);
+          } else if (event.step === 'done') {
+            source?.close();
+            rcaEventSourceRef.current = null;
+            if (event.message && visible) {
+              setMessages((prev) => [
+                ...prev.filter((m) => !(m.conversation_id === convId && m.id === userMsg.id)),
+                userMsg,
+                event.message as Message,
+              ]);
+            }
+            if (visible) {
+              setStreaming(false);
+              setStreamingContent('');
+            }
+            loadConversations();
+          } else if (event.step === 'error') {
+            source?.close();
+            rcaEventSourceRef.current = null;
+            if (visible) {
+              setStreaming(false);
+              setStreamingContent('');
+              alert(`RCA 분석 실패: ${event.error || '알 수 없는 오류'}`);
+            }
+          }
+        },
+        (err) => {
+          source?.close();
+          rcaEventSourceRef.current = null;
+          if (activeConvIdRef.current === convId) {
+            setStreaming(false);
+            setStreamingContent('');
+            alert(`RCA 분석 실패: ${err}`);
+          }
+        }
+      );
+      rcaEventSourceRef.current = source;
+    } catch (err: any) {
       setStreaming(false);
       setStreamingContent('');
-      loadConversations();
-    } finally {
-      setStreaming(false);
-      setStreamingContent('');
+      throw err;
     }
   };
 
   const handleCancel = () => {
+    if (rcaEventSourceRef.current) {
+      rcaEventSourceRef.current.close();
+      rcaEventSourceRef.current = null;
+    }
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
