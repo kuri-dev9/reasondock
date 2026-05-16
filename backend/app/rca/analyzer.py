@@ -114,9 +114,14 @@ def aggregate_records(records: list[dict[str, str]], parse_stats: dict[str, Any]
         if is_failure:
             call_type_failures[call_type] += 1
             failures_by_reason[_failure_key(record)] += 1
-            failures_by_mme[record.get("MME_ID") or "(empty)"] += 1
-            failures_by_enb[record.get("First_eNB_ID") or "(empty)"] += 1
-            failures_by_sgw[record.get("SGW_ID") or "(empty)"] += 1
+            interface = record.get("first_error_interface_protocol") or "0"
+
+            if interface in ("2", "5"):
+                failures_by_mme[record.get("MME_ID") or "(empty)"] += 1
+            if interface == "2":
+                failures_by_enb[record.get("First_eNB_ID") or "(empty)"] += 1
+            if interface == "3":
+                failures_by_sgw[record.get("SGW_ID") or "(empty)"] += 1
 
     timeline = []
     rates = []
@@ -138,6 +143,24 @@ def aggregate_records(records: list[dict[str, str]], parse_stats: dict[str, Any]
     std_rate = sqrt(sum((rate - mean_rate) ** 2 for rate in rates) / len(rates)) if rates else 0.0
     threshold = mean_rate + (2 * std_rate)
     anomalous = [item for item in timeline if item["fail_rate"] > threshold and item["fail"] > 0]
+
+    if not failures_by_mme or not failures_by_enb or not failures_by_sgw:
+        for record in records:
+            attempt = _int(record.get("attempt_flag"))
+            success = _int(record.get("success_flag"))
+            is_detach_cleanup = (
+                record.get("call_type") == "9"
+                and record.get("detach_flag") == "1"
+                and success == 1
+            )
+            is_failure = attempt == 1 and success == 0 and not is_detach_cleanup
+            if is_failure:
+                if not failures_by_mme:
+                    failures_by_mme[record.get("MME_ID") or "(empty)"] += 1
+                if not failures_by_enb:
+                    failures_by_enb[record.get("First_eNB_ID") or "(empty)"] += 1
+                if not failures_by_sgw:
+                    failures_by_sgw[record.get("SGW_ID") or "(empty)"] += 1
 
     return {
         "file_info": {
