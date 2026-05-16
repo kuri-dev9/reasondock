@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/rca", tags=["rca"])
 BASE_DIR = Path.cwd()
 UPLOAD_DIR = BASE_DIR / "xdr_uploads"
 RESULT_DIR = BASE_DIR / "rca_results"
+RCA_LLM_TIMEOUT_SECONDS = 1800
 
 
 async def _save_upload(file: UploadFile, target: Path) -> int:
@@ -36,10 +37,10 @@ async def _save_upload(file: UploadFile, target: Path) -> int:
     return size
 
 
-async def _generate_llm_rca(model: str, summary: dict) -> str | None:
+async def _generate_llm_rca(model: str, summary: dict) -> tuple[str | None, str | None]:
     prompt = build_rca_prompt(summary)
     try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
+        async with httpx.AsyncClient(timeout=RCA_LLM_TIMEOUT_SECONDS) as client:
             response = await client.post(
                 f"{settings.ollama_base_url}/api/generate",
                 json={
@@ -54,9 +55,11 @@ async def _generate_llm_rca(model: str, summary: dict) -> str | None:
             )
             response.raise_for_status()
             content = response.json().get("response", "").strip()
-            return content or None
-    except Exception:
-        return None
+            if not content:
+                return None, "LLM RCA 응답이 비어 있습니다."
+            return content, None
+    except Exception as exc:
+        return None, str(exc)
 
 
 @router.post("/jobs", response_model=RcaAnalyzeResponse)
@@ -104,7 +107,7 @@ async def create_rca_job(
         job.current_step = "llm"
         await db.commit()
 
-        llm_response = await _generate_llm_rca(conversation.model, result)
+        llm_response, llm_error = await _generate_llm_rca(conversation.model, result)
 
         result_path = RESULT_DIR / f"rca_job_{job.id}.json"
         result_path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,6 +116,8 @@ async def create_rca_job(
         result["result_path"] = str(result_path)
         if llm_response:
             result["llm_response"] = llm_response
+        if llm_error:
+            result["llm_error"] = llm_error
         result_path.write_text(
             json.dumps(result, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -136,6 +141,14 @@ async def create_rca_job(
         message_content = result["markdown"]
         if llm_response:
             message_content = f"{message_content}\n\n---\n\n{llm_response}"
+        elif llm_error:
+            message_content = (
+                f"{message_content}\n\n---\n\n"
+                "### LLM RCA 생성 실패\n"
+                "- Rule 기반 RCA 결과는 정상 생성되었습니다.\n"
+                f"- LLM 리포트 생성 실패 사유: `{llm_error}`\n"
+                "- Ollama 상태, 모델명, 모델 로딩 시간, 컨테이너의 `OLLAMA_BASE_URL` 설정을 확인하세요."
+            )
 
         message = Message(
             conversation_id=conversation_id,
