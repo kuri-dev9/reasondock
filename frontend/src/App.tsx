@@ -238,11 +238,17 @@ function App() {
           } else if (event.step === 'parsing' && visible) {
             setStreamingContent('xDR 파일 파싱 중입니다...');
           } else if (event.step === 'aggregating' && event.content && visible) {
-            setStreamingContent(`${event.content}\n\n---\n\n`);
+            setStreamingContent(`${event.content}\n\n---\n\nLLM RCA 리포트 생성 중입니다...\n\n`);
           } else if (event.step === 'llm' && visible) {
-            setStreamingContent((prev) => prev || 'LLM RCA 리포트 생성 중입니다...');
+            setStreamingContent((prev) => {
+              if (!prev) return 'LLM RCA 리포트 생성 중입니다...\n\n';
+              if (prev.includes('LLM RCA 리포트 생성 중입니다')) return prev;
+              return `${prev}\n\n---\n\nLLM RCA 리포트 생성 중입니다...\n\n`;
+            });
           } else if (event.step === 'llm_token' && event.token && visible) {
-            setStreamingContent((prev) => prev + event.token);
+            setStreamingContent((prev) =>
+              prev.replace('LLM RCA 리포트 생성 중입니다...\n\n', '') + event.token
+            );
           } else if (event.step === 'done') {
             source?.close();
             rcaEventSourceRef.current = null;
