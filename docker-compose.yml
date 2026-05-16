@@ -33,7 +33,10 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app  # 핫리로드용 (개발 시)
+      - ./data:/app/data:ro
       - knowledge_data:/app/knowledge_data
+      - xdr_uploads:/app/xdr_uploads
+      - rca_results:/app/rca_results
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,3 +54,5 @@ services:
 volumes:
   mysql_data:
   knowledge_data:
+  xdr_uploads:
+  rca_results:

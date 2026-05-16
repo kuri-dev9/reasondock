@@ -88,3 +88,28 @@ class ConversationImport(BaseModel):
     model: str = "gemma4:26b"
     system_prompt: str | None = None
     messages: list[MessageBase] = []
+
+
+class RcaJobResponse(BaseModel):
+    id: int
+    conversation_id: int
+    filename: str
+    file_size: int
+    status: str
+    progress: int
+    current_step: str | None = None
+    error_message: str | None = None
+    result_path: str | None = None
+    total_records: int | None = None
+    parsed_records: int | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RcaAnalyzeResponse(BaseModel):
+    job: RcaJobResponse
+    result: dict | None = None
+    message: MessageResponse | None = None

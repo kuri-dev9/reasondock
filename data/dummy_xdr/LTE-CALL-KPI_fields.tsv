@@ -1,0 +1,155 @@
+no	section	name	type	description
+1	Summary	SummaryCreateTime	timeval	xdr 출력 시간
+2	Summary	OngoingFlag	uint	Ongoing 구분
+3	User	IMSI	string	IMSI
+4	User	MDN	string	MDN
+5	User	IMEI	string	IMEI
+6	User	ServiceCode	string	ServiceCode
+7	User	PayCode	string	요금제
+8	User	Gender	string	성별
+9	User	Age	string	연령
+10	User	Vendor	string	Vendor
+11	User	Model	string	단말 모델
+12	Equipment	PGW_ID	uint	Internet - PGW ID
+13	Equipment	ims_PGW_ID	uint	ims - PGW ID
+14	Equipment	SGW_ID	uint	SGW ID
+15	Equipment	MME_ID	uint	MME ID
+16	Equipment	S6a_Authentication_Equip_Type	uint	Last S6a Equip Type for Authentication Information Request
+17	Equipment	S6a_Authentication_Equip_ID	uint	Last S6a Equip ID for Authentication Information Request
+18	Equipment	S6a_Location_Equip_Type	uint	Last S6a Equip Type for Update Location Request
+19	Equipment	S6a_Location_Equip_ID	uint	Last S6a Equip ID for Update Location Request
+20	Equipment	S13_Equip_Type	uint	Last S13 Equip Type, EIR
+21	Equipment	S13_Equip_ID	uint	Last S13 Equip ID, EIR ID
+22	Equipment	First_eNB_ID	uint	First ECGI에서 eNB ID 파싱 (일반 eNB : MSB 20bit, Femto eNB : 28bit)
+23	Equipment	First_Cell_ID	uint	First ECGI에서 Cell ID (일반 eNB : 하위 8bit 중 상위 6bit, Femto : 하위 8bit)
+24	Equipment	First_eNB_VLAN_ID	string	First eNB VLAN ID
+25	Equipment	Last_eNB_ID	uint	Last ECGI에서 eNB ID 파싱 (일반 eNB : MSB 20bit, Femto eNB : 28bit)
+26	Equipment	Last_Cell ID	uint	Last ECGI에서 Cell ID (일반 eNB : 하위 8bit 중 상위 6bit, Femto : 하위 8bit)
+27	Equipment	Last_eNB_VLAN_ID	string	Last eNB VLAN ID
+28	Equipment	PDN_Type	uint	Internet - PDN Type
+29	Equipment	PDN_IPv4	uint	Internet - PDN IPv4
+30	Equipment	PDN_IPv6	string	Internet - PDN IPv6 (hex string)
+31	Equipment	ims_PDN_Type	uint	ims - PDN Type
+32	Equipment	ims_PDN_IPv4	uint	ims - PDN IPv4
+33	Equipment	ims_PDN_IPv6	string	ims - PDN IPv6 (hex string)
+34	Call Flow	old_call_type	uint	바로 이전 Call의 Call Type
+35	Call Flow	old_call_end_time	timeval	바로 이전 Call의 Call End Time
+36	Call Flow	old_call_Last_eNB_ID	uint	현재 Call 이전에 UE가 마지막으로 접속한 eNB ID
+37	Call Flow	old_call_Last_Cell_ID	uint	현재 Call 이전에 UE가 마지막으로 접속한 Cell ID
+38	Call Flow	old_call_Last_TAC	uint	현재 Call 이전에 UE가 마지막으로 접속한 TAC
+39	Call Flow	call_type	uint	Call Type
+40	Call Flow	call_start_time	timeval	Call Start Time
+41	Call Flow	call_end_time	timeval	Call END Time
+42	Call Flow	call_duration_time	uint	Call Duration  (unit : microsecond)
+43	Call Flow	APN	string	S11 구간의 Internet APN
+44	Call Flow	ims_APN	string	S11 구간의 ims APN
+45	Call Flow	s6a_error_Message	uint	Last s6a Error Message
+46	Call Flow	s6a_error_Time	timeval	Last s6a Error Message Time
+47	Call Flow	s6a_error_Cause	uint	Last s6a Error Message Cause, Error 판단 조건: ((Cause >= 3000 && Cause < 6000) || (Cause >= 13000 && Cause < 16000))
+48	Call Flow	AuthenticationInformation_Time	timeval	Authentication Information Request
+49	Call Flow	AuthenticationInformation_Cause	uint	Authentication Information Answer의 Cause
+50	Call Flow	UpdateLocation_Time	timeval	Update Location Request
+51	Call Flow	UpdateLocation_Cause	uint	Update Location Answer의 Cause
+52	Call Flow	s13_error_Message	uint	Last s13 Error Message
+53	Call Flow	s13_error_Time	timeval	Last s13 Error Message Time
+54	Call Flow	s13_error_Cause	uint	Last s13 Error Message Cause, Error 판단 조건: ((Cause >= 3000 && Cause < 6000) || (Cause >= 13000 && Cause < 16000))
+55	Call Flow	MEIdentityCheck_Time	timeval	Me Identity Check Request
+56	Call Flow	MEIdentityCheck_Cause	uint	Me Identity Check Answer의 Cause
+57	Call Flow	s1ap_error_Message	uint	Last Error Message Cause
+58	Call Flow	s1ap_error_Time	timeval	Last s1ap Error Message Time
+59	Call Flow	s1ap_error_Cause	uint	Last s1ap Error Message Cause, Error 판단 조건: s1ap UnsuccessfulOutcome 메시지 타입인 경우 (UEContextReleaseRequest, UEContextRelease는 XDR_Cause 문서 참조)
+60	Call Flow	CNDomain	int	1차 Paging First Message CNDomain
+61	Call Flow	InitialUEMessage_RRC_Establishment_Cause	int	InitialUEMessage RRC Establishment Cause
+62	Call Flow	PathSwitch_count	uint	PathSwitch Request Count
+63	Call Flow	PathSwitchFailure_count	uint	PathSwitch Request 실패 Count
+64	Call Flow	UEContextReleaseRequest_Time	timeval	UEContextReleaseRequest
+65	Call Flow	UEContextReleaseRequest_Cause	uint	UEContextReleaseRequest Cause, release를 요청한 원인
+66	Call Flow	UEContextRelease_Time	timeval	UEContextReleaseCommand
+67	Call Flow	UEContextRelease_Cause	uint	UEContextReleaseCommand Cause, release를 요청한 원인
+68	Call Flow	emm_error_Message	uint	Last EMM Error Message
+69	Call Flow	emm_error_Time	timeval	Last EMM Error Message Time
+70	Call Flow	emm_error_Cause	uint	Last EMM Error Message Cause, Error 판단 조건: XDR_Cause 문서 참조
+71	Call Flow	DetachRequest_Time	timeval	Detach Request
+72	Call Flow	DetachRequest_Cause	uint	Detach Request Cause, Detach를 요청한 원인 (downlink 방향만 해당, Optional Field)
+73	Call Flow	DetachRequest_Type	int	Detach Request의 Detach Type, 방향에 따라 의미가 다름
+74	Call Flow	DetachRequest_Switchoff	int	Detach Request에서 Switch off 유무 (uplink 방향만 해당)
+75	Call Flow	DetachRequest_Direction	int	Detach Request의 방향 (nas direction 값과 동일)
+76	Call Flow	esm_error_Message	uint	Last ESM Error Message
+77	Call Flow	esm_error_Time	timeval	Last ESM Error Message Time
+78	Call Flow	esm_error_Cause	uint	Last ESM Error Message Cause, Error 판단 조건: XDR_Cause 문서 참조
+79	Call Flow	s11_error_Message	uint	Last s11 Error Message
+80	Call Flow	s11_error_Time	timeval	Last s11 Error Message Time
+81	Call Flow	s11_error_Cause	uint	Last s11 Error Message Cause, Error 판단 조건: Cause >= 64
+82	Call Flow	s10_error_Message	uint	Last s10 Error Message
+83	Call Flow	s10_error_Time	timeval	Last s10 Error Message Time
+84	Call Flow	s10_error_Cause	uint	Last s10 Error Message Cause, Error 판단 조건: Cause >= 64, Handover 관련 메세지만 Call Error에 반영
+85	Call Flow	s3_error_Message	uint	Last s3 Error Message
+86	Call Flow	s3_error_Time	timeval	Last s3 Error Message Time
+87	Call Flow	s3_error_Cause	uint	Last s3 Error Message Cause, Error 판단 조건: Cause >= 192, Call Error에 반영 안 함
+88	Call Flow	sms_mo_cp_error_cause	uint	SMS MO Control Protocol Last Error Cause
+89	Call Flow	sms_mo_rp_error_cause	uint	SMS MO Relay Protocol Last Error Cause
+90	Call Flow	sms_mo_tp_error_cause	uint	SMS MO Transfer Protocol Last Error Cause
+91	Call Flow	sms_mt_cp_error_cause	uint	SMS MT Control Protocol Last Error Cause
+92	Call Flow	sms_mt_rp_error_cause	uint	SMS MT Relay Protocol Last Error Cause
+93	Call Flow	sms_mt_tp_error_cause	uint	SMS MT Transfer Protocol Last Error Cause
+94	KPI Flags	attempt_flag	uint	시도호 여부
+95	KPI Flags	success_flag	uint	성공호 여부
+96	KPI Flags	data_attempt_flag	uint	Data 시도호 여부
+97	KPI Flags	data_success_flag	uint	Data 성공호 여부
+98	KPI Flags	ims_attempt_flag	uint	IMS 시도호 여부
+99	KPI Flags	ims_success_flag	uint	IMS 성공호 여부
+100	KPI Flags	drop_flag	uint	절단호 여부
+101	KPI Flags	paging_attempt_flag	uint	Paging 시도호 여부
+102	KPI Flags	paging_success_flag	uint	Paging 성공호 여부
+103	KPI Flags	detach_flag	uint	Detach 여부
+104	KPI Flags	npr_flag	uint	NPR 여부
+105	KPI Flags	auth_attempt_flag	uint	
+106	KPI Flags	auth_success_flag	uint	
+107	KPI Flags	location_attempt_flag	uint	
+108	KPI Flags	location_success_flag	uint	
+109	KPI Flags	mecheck_attempt_flag	uint	
+110	KPI Flags	mecheck_success_flag	uint	
+111	KPI Flags	first_error_interface_protocol	uint	First Error Message Interface Protocol
+112	KPI Flags	first_error_message	uint	First Error Message
+113	KPI Flags	first_error_time	timeval	First Error Message Time
+114	KPI Flags	first_error_cause	uint	First Error Message Cause
+115	KPI Flags	last_error_interface_protocol	uint	Last Error Message Interface Protocol
+116	KPI Flags	last_error_message	uint	Last Error Message
+117	KPI Flags	last_error_time	timeval	Last Error Message Time
+118	KPI Flags	last_error_cause	uint	Last Error Message Cause
+119	Interval	interval_First_eNB_ID	uint	Interval First ECGI에서 eNB ID 파싱 (일반 eNB : MSB 20bit, Femto eNB : 28bit)
+120	Interval	interval_First_eNB_IP	uint	Interval First eNB IP, s1mme구간 eNB ip
+121	Interval	interval_First_Cell_ID	uint	Interval First ECGI에서 Cell ID (일반 eNB : 하위 8bit 중 상위 6bit, Femto : 하위 8bit)
+122	Interval	interval_First_TAC	uint	Interval First TAC
+123	Interval	interval_First_eNB_C_UID	uint	Interval First eNB C_UID
+124	Interval	interval_First_eNB_VLAN_ID	string	Interval First eNB VLAN ID
+125	Interval	interval_call_start_time	timeval	Interval Call Start Time
+126	Call	old_call_s1ap_release_cause	uint	현재 Call 이전에 UE가 마지막으로 접속한 eNB로 전송된 S1AP UEContextReleaseCommand Cause
+127	Call	initial_access_duration	uint	Elapsed time in S1MME interface during the initial context establishment (unit: microsecond)
+128	Call	initial_access_msg_count	uint	The number of message procedures came from MME during the initial_access_duration
+129	Call	initial_core_duration	uint	Elapsed time in other interface except S1MME during the initial context establishment (unit: microsecond)
+130	Call	initial_core_msg_count	uint	The number of message procedures came from MME during the initial_core_duration
+131	Call	initial_paging_duration	uint	Elapsed time for paging in S1MME interface during the initial context establishment (unit: microsecond)
+132	Call	initial_paging_msg_count	uint	The number of paging messages occurred during the initial_paging_duration
+133	Call	initial_paging_attempt_count	uint	The number of paging attempts occurred during the initial_paging_duration
+134	Call	imsi_mcc_mnc_info	string	first 7 characters of imsi
+135	DCNR	ue_dcnr	int	UE DCNR Capability
+136	DCNR	initial_nr_conn_time	timeval	Initial NR Connection Time
+137	DCNR	ue_usage_type	int	UE Usage Type
+138	DCNR	mme_restrict_dcnr	int	MME Restriction of DCNR
+139	GTPv2C	ModifyBearer_success_count	uint	Internet - Modify Bearer Request 성공 Count
+140	S1AP	InitialUEMessage_Time	timeval	InitialUEMessage
+141	additional info	spid	uint	Subscriber Profile ID for RFP
+142	additional info	ExchangeNumber	string	국번 4자리 (010-ABCD-EFGH)
+143	additional info	nas_key_validity	uint	NAS Key 유효성 여부
+144	additional info	equip_nw	uint	UE Equipment Network Type ( 0: LTE, 1: 3G, 2 : 5G)
+145	eNB PLMN	First_eNB_PLMN	string	First eNB PLMN
+146	eNB PLMN	Last_eNB_PLMN	string	Last eNB PLMN
+147	eNB PLMN	old_call_Last_eNB_PLMN	string	현재 Call 이전에 UE가 마지막으로 접속한 eNB ID PLMN
+148	eNB PLMN	interval_First_eNB_PLMN	string	Interval First eNB PLMN
+149	Reserved	Reserved_149	string	
+150	Reserved	Reserved_150	string	
+151	Reserved	Reserved_151	string	
+152	Reserved	Reserved_152	string	
+153	Reserved	Reserved_153	string	
+154	Reserved	Reserved_154	string	

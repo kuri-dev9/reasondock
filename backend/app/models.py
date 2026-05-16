@@ -24,6 +24,9 @@ class Conversation(Base):
     attachments: Mapped[list["Attachment"]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan"
     )
+    rca_jobs: Mapped[list["RcaJob"]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan"
+    )
 
 
 class Message(Base):
@@ -63,3 +66,42 @@ class KnowledgeDocument(Base):
     status: Mapped[str] = mapped_column(String(20), default="processing")  # processing, ready, error
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class RcaJob(Base):
+    __tablename__ = "rca_jobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    filename: Mapped[str] = mapped_column(String(255))
+    file_size: Mapped[int] = mapped_column(default=0)
+    file_path: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    progress: Mapped[int] = mapped_column(default=0)
+    current_step: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    total_records: Mapped[Optional[int]] = mapped_column(nullable=True)
+    parsed_records: Mapped[Optional[int]] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    conversation: Mapped["Conversation"] = relationship(back_populates="rca_jobs")
+    result: Mapped[Optional["RcaResult"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class RcaResult(Base):
+    __tablename__ = "rca_results"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("rca_jobs.id", ondelete="CASCADE"))
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    summary_json: Mapped[dict] = mapped_column(JSON)
+    llm_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    job: Mapped["RcaJob"] = relationship(back_populates="result")

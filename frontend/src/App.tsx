@@ -18,6 +18,7 @@ import {
   uploadAttachment,
   fetchAttachments,
   deleteAttachment,
+  uploadRcaFile,
   exportConversation,
   importConversation,
 } from './api';
@@ -198,6 +199,47 @@ function App() {
     setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
   };
 
+  const handleRcaUpload = async (file: File) => {
+    let convId: number;
+    if (!activeConvId) {
+      const conv = await createConversation('RCA 분석', selectedModel, currentSystemPrompt || null);
+      setConversations((prev) => [conv, ...prev]);
+      setActiveConvId(conv.id);
+      activeConvIdRef.current = conv.id;
+      setMessages([]);
+      convId = conv.id;
+    } else {
+      convId = activeConvId;
+    }
+
+    const userMsg: Message = {
+      id: Date.now(),
+      conversation_id: convId,
+      role: 'user',
+      content: `xDR RCA 분석 요청: ${file.name}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev.filter((m) => m.conversation_id === convId), userMsg]);
+    setStreaming(true);
+    setStreamingContent('RCA 분석 중입니다...');
+    setThinkingContent('');
+
+    try {
+      const response = await uploadRcaFile(convId, file);
+      if (response.message) {
+        setMessages((prev) => [
+          ...prev.filter((m) => !(m.conversation_id === convId && m.id === userMsg.id)),
+          userMsg,
+          response.message as Message,
+        ]);
+      }
+      await loadConversations();
+    } finally {
+      setStreaming(false);
+      setStreamingContent('');
+    }
+  };
+
   const handleCancel = () => {
     if (abortRef.current) {
       abortRef.current.abort();
@@ -355,6 +397,7 @@ function App() {
           onSend={handleSend}
           onCancel={handleCancel}
           onFileUpload={handleFileUpload}
+          onRcaUpload={handleRcaUpload}
           onFileRemove={handleFileRemove}
           attachments={attachments}
           disabled={streaming}

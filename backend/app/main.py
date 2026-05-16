@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routes import conversations, chat, models, attachments, knowledge
+from app.routes import conversations, chat, models, attachments, knowledge, rca
 
 
 @asynccontextmanager
@@ -29,6 +29,7 @@ app.include_router(chat.router)
 app.include_router(models.router)
 app.include_router(attachments.router)
 app.include_router(knowledge.router)
+app.include_router(rca.router)
 
 
 @app.get("/api/health")

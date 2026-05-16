@@ -1,4 +1,4 @@
-import { Reference, SearchResult } from './types';
+import { RcaAnalyzeResponse, Reference, SearchResult } from './types';
 
 const API_BASE = '/api';
 
@@ -62,6 +62,21 @@ export async function deleteAttachment(conversationId: number, attachmentId: num
   await fetch(`${API_BASE}/conversations/${conversationId}/attachments/${attachmentId}`, {
     method: 'DELETE',
   });
+}
+
+export async function uploadRcaFile(conversationId: number, file: File): Promise<RcaAnalyzeResponse> {
+  const formData = new FormData();
+  formData.append('conversation_id', String(conversationId));
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/rca/jobs`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'RCA 분석 실패');
+  }
+  return res.json();
 }
 
 // Knowledge Base

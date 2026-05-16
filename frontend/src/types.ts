@@ -1,6 +1,9 @@
 export interface Reference {
   filename: string;
   score: number;
+  matched_summary?: boolean;
+  type?: string;
+  job_id?: number;
 }
 
 export interface Message {
@@ -53,4 +56,26 @@ export interface SearchResult {
   role: string;
   content_snippet: string;
   created_at: string;
+}
+
+export interface RcaJob {
+  id: number;
+  conversation_id: number;
+  filename: string;
+  file_size: number;
+  status: string;
+  progress: number;
+  current_step?: string | null;
+  error_message?: string | null;
+  result_path?: string | null;
+  total_records?: number | null;
+  parsed_records?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RcaAnalyzeResponse {
+  job: RcaJob;
+  result?: any;
+  message?: Message;
 }

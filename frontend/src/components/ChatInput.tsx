@@ -5,17 +5,20 @@ interface Props {
   onSend: (message: string) => void;
   onCancel: () => void;
   onFileUpload: (file: File) => Promise<void>;
+  onRcaUpload: (file: File) => Promise<void>;
   onFileRemove: (id: number) => void;
   attachments: Attachment[];
   disabled: boolean;
   streaming: boolean;
 }
 
-export default function ChatInput({ onSend, onCancel, onFileUpload, onFileRemove, attachments, disabled, streaming }: Props) {
+export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload, onFileRemove, attachments, disabled, streaming }: Props) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [rcaUploading, setRcaUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rcaInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -48,6 +51,20 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onFileRemove
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRcaFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRcaUploading(true);
+    try {
+      await onRcaUpload(file);
+    } catch (err: any) {
+      alert(err.message || 'RCA 분석 실패');
+    } finally {
+      setRcaUploading(false);
+      if (rcaInputRef.current) rcaInputRef.current.value = '';
     }
   };
 
@@ -92,6 +109,21 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onFileRemove
           className="file-input-hidden"
           onChange={handleFileChange}
           accept=".txt,.md,.py,.js,.ts,.jsx,.tsx,.json,.csv,.html,.css,.xml,.yaml,.yml,.pdf,.docx,.xlsx,.xls,.hwp,.hwpx,.log,.sh,.sql,.java,.c,.cpp,.h,.go,.rs"
+        />
+        <button
+          className="rca-btn"
+          onClick={() => rcaInputRef.current?.click()}
+          disabled={disabled || rcaUploading}
+          title="xDR RCA 분석"
+        >
+          {rcaUploading ? '분석중' : 'RCA'}
+        </button>
+        <input
+          ref={rcaInputRef}
+          type="file"
+          className="file-input-hidden"
+          onChange={handleRcaFileChange}
+          accept=".dat"
         />
         <textarea
           ref={textareaRef}

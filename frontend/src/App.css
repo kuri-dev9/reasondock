@@ -538,6 +538,28 @@ body {
   cursor: not-allowed;
 }
 
+.rca-btn {
+  min-width: 52px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 10px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.rca-btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.rca-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .file-input-hidden {
   display: none;
 }
