@@ -4,12 +4,15 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.models import Conversation, Message, RcaJob, RcaResult
 from app.rca.pipeline import analyze_xdr_file
+from app.rca.prompt_builder import build_rca_prompt
 from app.schemas import MessageResponse, RcaAnalyzeResponse, RcaJobResponse
 
 
@@ -33,6 +36,21 @@ async def _save_upload(file: UploadFile, target: Path) -> int:
     return size
 
 
+async def _generate_llm_rca(model: str, summary: dict) -> str | None:
+    prompt = build_rca_prompt(summary)
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            response = await client.post(
+                f"{settings.ollama_base_url}/api/generate",
+                json={"model": model, "prompt": prompt, "stream": False},
+            )
+            response.raise_for_status()
+            content = response.json().get("response", "").strip()
+            return content or None
+    except Exception:
+        return None
+
+
 @router.post("/jobs", response_model=RcaAnalyzeResponse)
 async def create_rca_job(
     conversation_id: int = Form(...),
@@ -42,7 +60,8 @@ async def create_rca_job(
     conv_result = await db.execute(
         select(Conversation).where(Conversation.id == conversation_id)
     )
-    if not conv_result.scalar_one_or_none():
+    conversation = conv_result.scalar_one_or_none()
+    if not conversation:
         raise HTTPException(status_code=404, detail="대화를 찾을 수 없습니다")
 
     filename = file.filename or "xdr.dat"
@@ -72,12 +91,20 @@ async def create_rca_job(
         await db.commit()
 
         result = analyze_xdr_file(file_path, filename)
+        job.status = "llm"
+        job.progress = 85
+        job.current_step = "llm"
+        await db.commit()
+
+        llm_response = await _generate_llm_rca(conversation.model, result)
+
         result_path = RESULT_DIR / f"rca_job_{job.id}.json"
         result_path.parent.mkdir(parents=True, exist_ok=True)
         result["job_id"] = job.id
         result["conversation_id"] = conversation_id
         result["result_path"] = str(result_path)
-        result["markdown"] = result["markdown"].replace('"result_file": ""', f'"result_file": "{result_path}"')
+        if llm_response:
+            result["llm_response"] = llm_response
         result_path.write_text(
             json.dumps(result, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -94,14 +121,18 @@ async def create_rca_job(
             job_id=job.id,
             conversation_id=conversation_id,
             summary_json=result,
-            llm_response=None,
+            llm_response=llm_response,
         )
         db.add(rca_result)
+
+        message_content = result["markdown"]
+        if llm_response:
+            message_content = f"{message_content}\n\n---\n\n{llm_response}"
 
         message = Message(
             conversation_id=conversation_id,
             role="assistant",
-            content=result["markdown"],
+            content=message_content,
             references=[
                 {
                     "filename": filename,

@@ -294,5 +294,4 @@ def render_markdown(summary: dict[str, Any]) -> str:
         rendered = ", ".join(f"{item['key']}({item['count']})" for item in entries) or "없음"
         lines.append(f"- {label.upper()}: {rendered}")
 
-    lines.extend(["", "```json", "{", f'  "result_file": "{summary.get("result_path", "")}"', "}", "```"])
     return "\n".join(lines)
