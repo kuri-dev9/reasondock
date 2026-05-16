@@ -27,6 +27,11 @@ services:
     environment:
       DATABASE_URL: mysql+aiomysql://root:root@mysql:3306/chat_demo
       OLLAMA_BASE_URL: http://host-gateway:11434  # 호스트의 Ollama
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-4o}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-anthropic/claude-sonnet-4-5}
+      DEFAULT_OLLAMA_MODEL: ${DEFAULT_OLLAMA_MODEL:-gemma4:26b}
     extra_hosts:
       - "host-gateway:host-gateway"  # 호스트 IP 자동 해석
     ports:

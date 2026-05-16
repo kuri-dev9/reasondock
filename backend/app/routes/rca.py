@@ -4,15 +4,14 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.database import get_db
 from app.models import Conversation, Message, RcaJob, RcaResult
 from app.rca.pipeline import analyze_xdr_file
 from app.rca.prompt_builder import build_rca_prompt
+from app.services.llm import LLMError, chat as llm_chat
 from app.schemas import MessageResponse, RcaAnalyzeResponse, RcaJobResponse
 
 
@@ -21,7 +20,6 @@ router = APIRouter(prefix="/api/rca", tags=["rca"])
 BASE_DIR = Path.cwd()
 UPLOAD_DIR = BASE_DIR / "xdr_uploads"
 RESULT_DIR = BASE_DIR / "rca_results"
-RCA_LLM_TIMEOUT_SECONDS = 1800
 
 
 async def _save_upload(file: UploadFile, target: Path) -> int:
@@ -35,31 +33,6 @@ async def _save_upload(file: UploadFile, target: Path) -> int:
             size += len(chunk)
             output.write(chunk)
     return size
-
-
-async def _generate_llm_rca(model: str, summary: dict) -> tuple[str | None, str | None]:
-    prompt = build_rca_prompt(summary)
-    try:
-        async with httpx.AsyncClient(timeout=RCA_LLM_TIMEOUT_SECONDS) as client:
-            response = await client.post(
-                f"{settings.ollama_base_url}/api/generate",
-                json={
-                    "model": model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.1,
-                        "num_predict": 1400,
-                    },
-                },
-            )
-            response.raise_for_status()
-            content = response.json().get("response", "").strip()
-            if not content:
-                return None, "LLM RCA 응답이 비어 있습니다."
-            return content, None
-    except Exception as exc:
-        return None, str(exc)
 
 
 @router.post("/jobs", response_model=RcaAnalyzeResponse)
@@ -107,7 +80,25 @@ async def create_rca_job(
         job.current_step = "llm"
         await db.commit()
 
-        llm_response, llm_error = await _generate_llm_rca(conversation.model, result)
+        prompt = build_rca_prompt(result)
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an LTE/EPC RCA expert. Return a grounded Korean RCA report.",
+            },
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            llm_response = await llm_chat(
+                conversation.model,
+                messages,
+                options={"temperature": 0.1, "num_predict": 1400},
+                timeout=1800.0,
+            )
+            llm_error = None
+        except LLMError as exc:
+            llm_response = None
+            llm_error = f"{exc.reason}: {exc.detail} (raw={exc.raw})"
 
         result_path = RESULT_DIR / f"rca_job_{job.id}.json"
         result_path.parent.mkdir(parents=True, exist_ok=True)

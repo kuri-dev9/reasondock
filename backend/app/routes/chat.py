@@ -4,12 +4,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
-import httpx
 
 from app.database import get_db
-from app.config import settings
 from app.models import Conversation, Message, Attachment, KnowledgeDocument
 from app.schemas import ChatRequest
+from app.services.llm import LLMError, chat as llm_chat, stream_chat
 from app import vector_store
 from app.tokenizer import tokenize as _tokenize
 
@@ -24,15 +23,15 @@ async def generate_title(model: str, user_message: str, assistant_response: str)
         f"AI: {assistant_response[:200]}"
     )
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                f"{settings.ollama_base_url}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False},
-            )
-            data = resp.json()
-            title = data.get("response", "").strip().strip('"').strip("'")
-            return title[:50] if title else user_message[:50]
-    except Exception:
+        title = await llm_chat(
+            model,
+            [{"role": "user", "content": prompt}],
+            options={"temperature": 0.2, "num_predict": 64},
+            timeout=60.0,
+        )
+        title = title.strip().strip('"').strip("'")
+        return title[:50] if title else user_message[:50]
+    except LLMError:
         return user_message[:50]
 
 
@@ -186,32 +185,17 @@ async def chat(
 
     async def generate():
         full_response = ""
-        thinking_content = ""
-        try:
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                async with client.stream(
-                    "POST",
-                    f"{settings.ollama_base_url}/api/chat",
-                    json={"model": conv.model, "messages": messages, "stream": True},
-                ) as response:
-                    async for line in response.aiter_lines():
-                        if line:
-                            chunk = json.loads(line)
-                            msg = chunk.get("message", {})
-                            thinking = msg.get("thinking", "")
-                            content = msg.get("content", "")
-
-                            if thinking:
-                                thinking_content += thinking
-                                yield f"data: {json.dumps({'thinking': thinking})}\n\n"
-                            if content:
-                                full_response += content
-                                yield f"data: {json.dumps({'token': content})}\n\n"
-                            if chunk.get("done"):
-                                break
-        except httpx.HTTPError as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            return
+        async for event in stream_chat(conv.model, messages, timeout=300.0):
+            if event["type"] == "thinking":
+                yield f"data: {json.dumps({'thinking': event['content']})}\n\n"
+            elif event["type"] == "token":
+                full_response += event["content"]
+                yield f"data: {json.dumps({'token': event['content']})}\n\n"
+            elif event["type"] == "error":
+                yield f"data: {json.dumps({'error': event['content']})}\n\n"
+                return
+            elif event["type"] == "done":
+                break
 
         if full_response.strip():
             assistant_message = Message(

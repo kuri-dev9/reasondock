@@ -13,8 +13,8 @@ export default function ModelSelector({ models, selectedModel, onChange }: Props
       <label>모델:</label>
       <select value={selectedModel} onChange={(e) => onChange(e.target.value)}>
         {models.map((m) => (
-          <option key={m.name} value={m.name}>
-            {m.name}
+          <option key={m.name} value={m.name} disabled={m.available === false}>
+            {m.display || m.name}{m.available === false ? ' (미설정)' : ''}
           </option>
         ))}
       </select>

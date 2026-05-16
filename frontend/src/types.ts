@@ -27,8 +27,11 @@ export interface Conversation {
 
 export interface OllamaModel {
   name: string;
-  size: number;
-  modified_at: string;
+  provider?: string;
+  display?: string;
+  available?: boolean;
+  size?: number;
+  modified_at?: string;
 }
 
 export interface Attachment {
