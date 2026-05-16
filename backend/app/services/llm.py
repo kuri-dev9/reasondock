@@ -36,7 +36,11 @@ def _raw_diagnostics(raw: dict | None, thinking: str = "") -> dict[str, Any]:
 def _classify_empty_response(raw: dict | None, thinking: str = "") -> LLMError:
     diagnostics = _raw_diagnostics(raw, thinking)
     if diagnostics.get("done_reason") == "length":
-        return LLMError("context_exceeded", "LLM 컨텍스트 또는 생성 길이 제한에 도달했습니다.", diagnostics)
+        return LLMError(
+            "context_exceeded",
+            "LLM 입력 컨텍스트 또는 생성 길이 제한에 도달했습니다. eval_count가 num_predict와 같다면 생성 길이 제한입니다.",
+            diagnostics,
+        )
     if thinking:
         return LLMError("thinking_only", "LLM이 thinking만 반환하고 최종 content를 비웠습니다.", diagnostics)
     return LLMError("empty_response", "LLM 최종 응답이 비어 있습니다.", diagnostics)

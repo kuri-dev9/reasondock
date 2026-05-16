@@ -92,7 +92,7 @@ async def create_rca_job(
             llm_response = await llm_chat(
                 conversation.model,
                 messages,
-                options={"temperature": 0.1, "num_predict": 1400},
+                options={"temperature": 0.1, "num_predict": 8192},
                 timeout=1800.0,
             )
             llm_error = None
