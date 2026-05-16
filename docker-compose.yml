@@ -1,0 +1,53 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: chat_demo_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: chat_demo
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: chat_demo_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql+aiomysql://root:root@mysql:3306/chat_demo
+      OLLAMA_BASE_URL: http://host-gateway:11434  # 호스트의 Ollama
+    extra_hosts:
+      - "host-gateway:host-gateway"  # 호스트 IP 자동 해석
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app  # 핫리로드용 (개발 시)
+      - knowledge_data:/app/knowledge_data
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: chat_demo_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  knowledge_data:
