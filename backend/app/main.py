@@ -1,15 +1,32 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.database import engine, Base
 from app.routes import conversations, chat, models, attachments, knowledge, rca
+
+
+async def _ensure_longtext_columns(conn):
+    if conn.dialect.name != "mysql":
+        return
+    statements = [
+        "ALTER TABLE messages MODIFY content LONGTEXT NOT NULL",
+        "ALTER TABLE attachments MODIFY content_text LONGTEXT NOT NULL",
+        "ALTER TABLE knowledge_documents MODIFY summary LONGTEXT NULL",
+        "ALTER TABLE knowledge_documents MODIFY error_message LONGTEXT NULL",
+        "ALTER TABLE rca_jobs MODIFY error_message LONGTEXT NULL",
+        "ALTER TABLE rca_results MODIFY llm_response LONGTEXT NULL",
+    ]
+    for statement in statements:
+        await conn.execute(text(statement))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await _ensure_longtext_columns(conn)
     yield
     await engine.dispose()
 
