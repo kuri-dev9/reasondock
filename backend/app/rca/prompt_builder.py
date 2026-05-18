@@ -20,6 +20,48 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
 
 def build_rca_prompt(summary: dict[str, Any]) -> str:
     summary_json = json.dumps(_compact_summary(summary), ensure_ascii=False, indent=2)
+    if summary.get("analysis_mode") == "healthy":
+        return f"""당신은 LTE/EPC 서비스 상태 점검 보고서를 작성하는 통신망 운영 전문가입니다.
+
+아래 LTE-Call-KPI summary JSON은 Healthy Mode 결과입니다.
+장애 원인 분석 보고서처럼 쓰지 말고, 네트워크 정상 상태를 검증한 운영 보고서처럼 작성하세요.
+
+중요 원칙:
+- 반드시 한국어로 작성합니다. 기술 용어는 필요한 경우만 영어로 유지할 수 있습니다.
+- 정상 데이터를 실패처럼 보이게 하는 부정적 표현은 사용하지 않습니다.
+- 장애 원인, root cause, cascading failure, 분석 한계를 강조하지 않습니다.
+- 정상 동작 확인, 안정적인 상태, 특이 징후 없음, 주요 절차 정상 수행, 인터페이스 오류 미관찰 중심으로 작성합니다.
+- JSON에 없는 장애, 장비 문제, vendor 문제, overload/resource 문제를 추정하지 않습니다.
+- Rule 기반 데이터 요약은 이미 표시되었으므로 수치 반복은 최소화합니다.
+
+출력 형식:
+
+아래 heading만 사용하세요. 각 섹션은 5줄 이내로 작성하세요.
+짧고 명확한 bullet 중심으로 작성하고, 표는 사용하지 마세요.
+
+[서비스 상태 요약]
+- 분석 구간의 서비스 상태를 정상/안정 관점에서 요약합니다.
+
+[정상 동작 지표]
+- 성공 처리, 실패/Drop 미관찰, 주요 절차 정상 수행을 중심으로 작성합니다.
+
+[인터페이스 상태]
+- S1-MME, S11, NAS, S6a 등 주요 인터페이스에서 특이 오류가 관찰되지 않았음을 작성합니다.
+
+[절차 상태]
+- Attach, Service Request, TAU 등 JSON에서 관찰 가능한 절차 상태를 정상 수행 관점으로 작성합니다.
+
+[운영 의견]
+- 현재 구간의 서비스 품질과 안정성에 대한 운영 판단을 작성합니다.
+
+[권장 사항]
+- 기존 KPI 모니터링 유지, 장기 추세 분석 지속 등 과도하지 않은 권고만 작성합니다.
+
+RCA summary JSON:
+```json
+{summary_json}
+```"""
+
     return f"""당신은 LTE/EPC 장애 분석 보고서를 작성하는 통신망 RCA 전문가입니다.
 
 아래 LTE-Call-KPI RCA summary JSON을 근거로 운영 보고서 스타일의 한국어 RCA를 작성하세요.

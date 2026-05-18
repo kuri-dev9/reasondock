@@ -181,6 +181,7 @@ def aggregate_records(records: list[dict[str, str]], parse_stats: dict[str, Any]
             "fail_rate": _ratio(failures, attempts),
             "drop_rate": _ratio(drops, attempts),
         },
+        "analysis_mode": "healthy" if failures == 0 and drops == 0 else "incident",
         "top_call_types": _top(call_types),
         "call_type_failures": _top(call_type_failures),
         "top_failures": _top(failures_by_reason),
@@ -205,6 +206,9 @@ def build_candidates(summary: dict[str, Any]) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     top_failures = summary["top_failures"]
     added_causes: set[str] = set()
+
+    if summary.get("analysis_mode") == "healthy":
+        return []
 
     def add(cause: str, confidence: float, evidence: list[str]) -> None:
         evidence_key = f"{cause}|{evidence[0] if evidence else ''}"
@@ -311,6 +315,50 @@ def render_markdown(summary: dict[str, Any]) -> str:
 
     def pct(value: float) -> str:
         return f"{value:.2%}"
+
+    if summary.get("analysis_mode") == "healthy":
+        call_types = ", ".join(
+            f"{item['key']}({item['count']:,})" for item in summary.get("top_call_types", [])[:5]
+        ) or "없음"
+        lines = [
+            "## 서비스 상태 요약",
+            "",
+            f"- 파일: `{summary['file_info']['filename']}`",
+            f"- 기간: {format_period(period.get('start_us'))} ~ {format_period(period.get('end_us'))}",
+            "- 분석 대상 기간 동안 Call Failure 및 Drop 현상은 관찰되지 않았습니다.",
+            f"- 총 레코드 / 시도 / 성공: {overall['total']:,} / {overall['attempt']:,} / {overall['success']:,}",
+            f"- 성공률 / 실패율 / 절단율: {pct(_ratio(overall['success'], overall['attempt']))} / {pct(overall['fail_rate'])} / {pct(overall['drop_rate'])}",
+            "",
+            "## 정상 동작 지표",
+            "",
+            "- Call Failure: 0건",
+            "- Drop: 0건",
+            "- 주요 실패 패턴: 없음",
+            f"- 주요 절차 분포: {call_types}",
+            "",
+            "## 인터페이스 상태",
+            "",
+            "- S1-MME: 특이 오류 미관찰",
+            "- S11: 세션 생성 실패 미관찰",
+            "- NAS: Reject 패턴 미관찰",
+            "- S6a Diameter: 인증 관련 실패 미관찰",
+            "",
+            "## 절차 상태",
+            "",
+            "- 분석 구간 내 주요 Call 절차가 실패 없이 처리된 것으로 관찰됩니다.",
+            "- 특정 장비 또는 인터페이스에 집중된 장애 패턴은 확인되지 않습니다.",
+            "",
+            "## 운영 의견",
+            "",
+            "- 현재 분석 구간의 서비스 상태는 안정적인 수준으로 판단됩니다.",
+            "- 비정상 signaling 증가 또는 특정 인터페이스 집중 장애 징후는 관찰되지 않았습니다.",
+            "",
+            "## 권장 사항",
+            "",
+            "- 기존 KPI 모니터링을 유지하세요.",
+            "- 장기 추세 기반 품질 분석은 별도 주기로 지속하는 것을 권장합니다.",
+        ]
+        return "\n".join(lines)
 
     lines = [
         "## xDR 통계 요약",

@@ -1,4 +1,5 @@
 import json
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,38 +16,108 @@ from app.tokenizer import tokenize as _tokenize
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 
 
+TITLE_STOPWORDS = {
+    "안녕하세요",
+    "있습니다",
+    "합니다",
+    "주세요",
+    "그리고",
+    "하지만",
+    "대한",
+    "관련",
+    "내용",
+    "질문",
+    "답변",
+    "사용자",
+    "설명",
+    "가능",
+    "정도",
+    "부분",
+    "것은",
+    "것이",
+    "있는",
+    "없는",
+    "the",
+    "and",
+    "for",
+    "with",
+}
+
+
+def _clean_title_candidate(title: str) -> str:
+    title = title.strip().splitlines()[0] if title.strip() else ""
+    title = re.sub(r"^[#*\-\s'\"]+|[#*\-\s'\"]+$", "", title)
+    title = re.sub(r"^(제목|Title)\s*[:：]\s*", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"[.!?。]+$", "", title)
+    title = " ".join(title.split())
+    return title[:15]
+
+
+def _is_copied_title(title: str, user_message: str, assistant_response: str) -> bool:
+    if not title:
+        return True
+    compact_title = re.sub(r"\s+", "", title)
+    compact_user = re.sub(r"\s+", "", user_message)
+    compact_assistant = re.sub(r"\s+", "", assistant_response)
+    if len(compact_title) >= 6 and (
+        compact_title in compact_user or compact_title in compact_assistant
+    ):
+        return True
+    return user_message.startswith(title) or assistant_response.startswith(title)
+
+
 def fallback_title(user_message: str, assistant_response: str) -> str:
-    source = assistant_response.strip() or user_message.strip()
-    for separator in ["\n", ".", "?", "!", "다.", "요."]:
-        if separator in source:
-            source = source.split(separator, 1)[0]
-            break
-    title = " ".join(source.replace("#", " ").replace("*", " ").split())
-    return title[:15] or "새 대화"
+    source = f"{user_message}\n{assistant_response}"
+    tokens = re.findall(r"[가-힣A-Za-z0-9][가-힣A-Za-z0-9_\-]{1,}", source)
+    scored: dict[str, int] = {}
+    for token in tokens:
+        normalized = token.strip("_-")
+        key = normalized.lower()
+        if len(normalized) < 2 or key in TITLE_STOPWORDS:
+            continue
+        score = 3 if normalized in user_message else 1
+        if normalized.isupper() or any(char.isdigit() for char in normalized):
+            score += 1
+        scored[normalized] = scored.get(normalized, 0) + score
+
+    keywords = [
+        token
+        for token, _ in sorted(scored.items(), key=lambda item: (-item[1], len(item[0]), item[0]))[:3]
+    ]
+    if not keywords:
+        return "새 대화"
+    return _clean_title_candidate(" ".join(keywords)) or "새 대화"
 
 
 async def generate_title(model: str, user_message: str, assistant_response: str) -> str:
     prompt = (
-        "다음 대화의 핵심 주제를 한국어 제목으로 요약하세요.\n"
+        "다음 사용자 질문과 AI 답변을 모두 참고하여 대화 목록에 표시할 짧은 제목을 만드세요.\n"
         "규칙:\n"
         "- 15자 이내\n"
+        "- 한국어 명사구 형태\n"
         "- 제목만 출력\n"
-        "- 사용자 질문을 그대로 복사하지 말 것\n"
-        "- 따옴표, 마침표, 설명 금지\n\n"
-        f"사용자: {user_message[:200]}\n"
-        f"AI: {assistant_response[:200]}"
+        "- 사용자 질문이나 AI 답변 문장을 그대로 복사하지 말 것\n"
+        "- 인사말, 설명문, 따옴표, 마침표 금지\n\n"
+        f"[사용자 질문]\n{user_message[:500]}\n\n"
+        f"[AI 답변]\n{assistant_response[:700]}"
     )
     try:
         title = await llm_chat(
             model,
-            [{"role": "user", "content": prompt}],
+            [
+                {
+                    "role": "system",
+                    "content": "너는 대화 내용을 짧은 한국어 제목으로 요약하는 도우미다. 원문 문장 복사는 금지한다.",
+                },
+                {"role": "user", "content": prompt},
+            ],
             options={"temperature": 0.2, "num_predict": 64},
             timeout=60.0,
         )
-        title = title.strip().strip('"').strip("'")
-        if not title or title in user_message or user_message.startswith(title):
+        title = _clean_title_candidate(title)
+        if _is_copied_title(title, user_message, assistant_response):
             return fallback_title(user_message, assistant_response)
-        return title[:15]
+        return title
     except LLMError:
         return fallback_title(user_message, assistant_response)
 
