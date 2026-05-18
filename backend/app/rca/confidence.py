@@ -15,8 +15,8 @@ def build_confidence_findings(
     for item in semantic_summary.get("top_semantics", [])[:5]:
         confirmed.append(
             {
-                "statement": f"{item['semantic']} observed",
-                "evidence": f"{item['count']} event(s) in semantic enrichment",
+                "statement": f"{item['semantic']} 패턴 관찰",
+                "evidence": f"semantic enrichment 기준 {item['count']}건 관찰",
                 "confidence": 0.95,
             }
         )
@@ -24,8 +24,8 @@ def build_confidence_findings(
     for item in procedure_analysis.get("likely_failed_phases", [])[:3]:
         confirmed.append(
             {
-                "statement": f"{item['call_type']} failed around {item['phase']} phase",
-                "evidence": f"{item['count']} event(s) mapped to procedure phase",
+                "statement": f"{item['call_type']} 절차의 {item['phase']} 단계 실패 패턴 관찰",
+                "evidence": f"procedure phase mapping 기준 {item['count']}건 관찰",
                 "confidence": 0.82,
             }
         )
@@ -34,8 +34,8 @@ def build_confidence_findings(
     if primary:
         strong_suspicions.append(
             {
-                "statement": f"Primary root cause is closest to {primary['event']}",
-                "evidence": primary["evidence"],
+                "statement": f"{primary['event']} 계열이 주요 원인 후보로 우선 의심됨",
+                "evidence": "procedure phase 및 timestamp ordering 기반 우선 의심",
                 "confidence": primary["confidence"],
             }
         )
@@ -43,8 +43,8 @@ def build_confidence_findings(
     for item in causal_chain.get("secondary_effects", [])[:3]:
         strong_suspicions.append(
             {
-                "statement": f"{item['event']} is likely secondary",
-                "evidence": f"{item['relation']} after causal step {item['caused_by']}",
+                "statement": f"{item['event']} 계열은 2차 영향 가능성 존재",
+                "evidence": f"causal step {item['caused_by']} 이후 {item['relation']} 관계로 관찰",
                 "confidence": item["confidence"],
             }
         )
@@ -52,8 +52,8 @@ def build_confidence_findings(
     if semantic_summary.get("unknown_cause_count"):
         weak_hypotheses.append(
             {
-                "statement": "Some cause codes require mapping confirmation",
-                "evidence": f"{semantic_summary['unknown_cause_count']} unknown cause event(s)",
+                "statement": "일부 cause code는 의미 매핑 확인 필요",
+                "evidence": f"unknown cause event {semantic_summary['unknown_cause_count']}건 존재",
                 "confidence": 0.35,
             }
         )

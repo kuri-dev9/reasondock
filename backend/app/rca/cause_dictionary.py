@@ -7,13 +7,15 @@ CAUSE_DICTIONARY: dict[str, dict[str, dict[str, str]]] = {
     "S6a_Diameter": {
         "15001": {
             "semantic": "DIAMETER_ERROR_USER_UNKNOWN",
-            "description": "Subscriber unknown in HSS",
+            "description": "Diameter subscriber lookup/authentication related failure",
             "domain": "authentication",
+            "safe_label": "Diameter subscriber lookup 관련 실패",
         },
         "5001": {
             "semantic": "AUTHENTICATION_DATA_UNAVAILABLE",
-            "description": "Authentication data unavailable from HSS/AuC",
+            "description": "Diameter authentication data availability related failure",
             "domain": "authentication",
+            "safe_label": "Diameter 인증 데이터 조회 관련 실패",
         },
     },
     "S11_GTPv2C": {
@@ -21,11 +23,13 @@ CAUSE_DICTIONARY: dict[str, dict[str, dict[str, str]]] = {
             "semantic": "CONTEXT_NOT_FOUND",
             "description": "Bearer/session context not found or cleanup-related GTP-C failure",
             "domain": "bearer_session",
+            "safe_label": "Bearer/session context 관련 실패",
         },
         "90": {
             "semantic": "BEARER_SESSION_ESTABLISHMENT_FAILURE",
             "description": "Bearer/session establishment related failure",
             "domain": "bearer_session",
+            "safe_label": "Bearer/session establishment 관련 실패",
         },
     },
     "S1MME_NAS-EMM": {
@@ -33,16 +37,19 @@ CAUSE_DICTIONARY: dict[str, dict[str, dict[str, str]]] = {
             "semantic": "EPS_SERVICES_NOT_ALLOWED",
             "description": "EPS services not allowed",
             "domain": "mobility_management",
+            "safe_label": "EPS service 허용 상태 관련 실패",
         },
         "15": {
             "semantic": "NO_SUITABLE_CELLS_IN_TRACKING_AREA",
             "description": "No suitable cells in tracking area or mobility restriction",
             "domain": "mobility_management",
+            "safe_label": "TA/셀 선택 또는 mobility restriction 관련 실패",
         },
         "31": {
             "semantic": "REQUEST_REJECTED_UNSPECIFIED",
             "description": "Request rejected, unspecified",
             "domain": "mobility_management",
+            "safe_label": "NAS request reject 관련 실패",
         },
     },
     "S1MME_S1AP": {
@@ -50,6 +57,7 @@ CAUSE_DICTIONARY: dict[str, dict[str, dict[str, str]]] = {
             "semantic": "S1AP_MESSAGE_TIMEOUT",
             "description": "S1AP procedure message timeout",
             "domain": "transport",
+            "safe_label": "S1AP message timeout",
         },
     },
 }
@@ -71,6 +79,7 @@ def resolve_cause(interface: str, message: Any, cause_code: Any) -> dict[str, An
             "semantic": mapping["semantic"],
             "description": mapping["description"],
             "domain": mapping["domain"],
+            "safe_label": mapping.get("safe_label", mapping["description"]),
             "known": True,
         }
 
@@ -80,5 +89,6 @@ def resolve_cause(interface: str, message: Any, cause_code: Any) -> dict[str, An
         "semantic": f"CAUSE_{code}",
         "description": "Unknown cause code; raw value preserved",
         "domain": "unknown",
+        "safe_label": f"원시 cause code {code}",
         "known": False,
     }
