@@ -15,10 +15,24 @@ from app.tokenizer import tokenize as _tokenize
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 
 
+def fallback_title(user_message: str, assistant_response: str) -> str:
+    source = assistant_response.strip() or user_message.strip()
+    for separator in ["\n", ".", "?", "!", "다.", "요."]:
+        if separator in source:
+            source = source.split(separator, 1)[0]
+            break
+    title = " ".join(source.replace("#", " ").replace("*", " ").split())
+    return title[:15] or "새 대화"
+
+
 async def generate_title(model: str, user_message: str, assistant_response: str) -> str:
     prompt = (
-        "다음 대화의 내용을 요약하여 짧은 제목(15자 이내)을 한국어로 만들어주세요. "
-        "제목만 출력하고 다른 설명은 하지 마세요.\n\n"
+        "다음 대화의 핵심 주제를 한국어 제목으로 요약하세요.\n"
+        "규칙:\n"
+        "- 15자 이내\n"
+        "- 제목만 출력\n"
+        "- 사용자 질문을 그대로 복사하지 말 것\n"
+        "- 따옴표, 마침표, 설명 금지\n\n"
         f"사용자: {user_message[:200]}\n"
         f"AI: {assistant_response[:200]}"
     )
@@ -30,9 +44,11 @@ async def generate_title(model: str, user_message: str, assistant_response: str)
             timeout=60.0,
         )
         title = title.strip().strip('"').strip("'")
-        return title[:50] if title else user_message[:50]
+        if not title or title in user_message or user_message.startswith(title):
+            return fallback_title(user_message, assistant_response)
+        return title[:15]
     except LLMError:
-        return user_message[:50]
+        return fallback_title(user_message, assistant_response)
 
 
 def _compute_summary_similarity(query: str, summaries: list[dict]) -> list[dict]:

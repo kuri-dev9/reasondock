@@ -243,19 +243,14 @@ function App() {
             setStreamingContent((prev) => prev + event.token);
           } else if (event.step === 'summary_done' && visible) {
             setStreamingContent((prev) => `${prev}\n`);
-          } else if (event.step === 'llm_prepare' && event.content && visible) {
-            setStreamingContent((prev) => prev + event.content);
+            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
+          } else if (event.step === 'llm_prepare' && visible) {
+            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
           } else if (event.step === 'llm' && visible) {
-            setStreamingContent((prev) => {
-              const message = event.content || 'LLM RCA 리포트 생성 중입니다...\n\n';
-              if (!prev) return message;
-              if (prev.includes('LLM RCA 리포트 생성 중입니다')) return prev;
-              return `${prev}${message}`;
-            });
+            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
           } else if (event.step === 'llm_token' && event.token && visible) {
-            setStreamingContent((prev) =>
-              prev.replace('LLM RCA 리포트 생성 중입니다...\n\n', '') + event.token
-            );
+            setThinkingContent('');
+            setStreamingContent((prev) => prev + event.token);
           } else if (event.step === 'done') {
             source?.close();
             rcaEventSourceRef.current = null;
@@ -269,6 +264,7 @@ function App() {
             if (visible) {
               setStreaming(false);
               setStreamingContent('');
+              setThinkingContent('');
             }
             loadConversations();
           } else if (event.step === 'error') {
@@ -277,6 +273,7 @@ function App() {
             if (visible) {
               setStreaming(false);
               setStreamingContent('');
+              setThinkingContent('');
               alert(`RCA 분석 실패: ${event.error || '알 수 없는 오류'}`);
             }
           }
@@ -287,6 +284,7 @@ function App() {
           if (activeConvIdRef.current === convId) {
             setStreaming(false);
             setStreamingContent('');
+            setThinkingContent('');
             alert(`RCA 분석 실패: ${err}`);
           }
         }
@@ -452,7 +450,19 @@ function App() {
             </div>
           )}
           {streaming && streamingContent && (
-            <ChatMessage role="assistant" content={streamingContent} />
+            <>
+              <ChatMessage role="assistant" content={streamingContent} />
+              {thinkingContent && (
+                <div className="message assistant">
+                  <div className="message-avatar">
+                    <img src="/ai_icon.svg" alt="AI" className="avatar-icon" />
+                  </div>
+                  <div className="message-content thinking-indicator">
+                    <span className="thinking-label">{thinkingContent}</span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>

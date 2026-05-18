@@ -25,19 +25,19 @@ def build_rca_prompt(summary: dict[str, Any]) -> str:
 Analyze the provided LTE-Call-KPI RCA summary JSON.
 The rule-based data summary has already been shown to the user before your response.
 Do not repeat that data summary.
-Your job is to write only interpretation and operational judgment.
+Your job is to summarize evidence-constrained causal RCA.
 
 The raw xDR records are not provided. Do not invent fields, causes, vendors, node names, packet details, or timeline values that are not present in the JSON.
 
 Strict grounding rules:
-- Mention numeric values and equipment IDs only when essential to the interpretation or priority decision.
-- If you mention a numeric ID, message code, cause code, count, ratio, or candidate name, copy it exactly from the JSON.
-- Do not write numbers, equipment names, vendors, or root causes that are not in the JSON.
-- Do not mention timeline peak values unless they exist in summary_json.time_anomaly.windows or summary_json.timeline.
-- Most xDR fields are numeric codes. If a mapping is not provided, keep raw labels such as MESSAGE_9 or CAUSE_64.
-- You may explain possible meanings of message/cause codes from telecom experience, but clearly mark them as experience-based assumptions when no mapping table exists.
-- You may infer which interface is more likely to be upstream, but separate observed evidence from inference.
-- Use cautious Korean phrasing such as "가능성", "추정", and "확인 필요" unless the JSON directly proves it.
+- Treat summary_json.semantic_failures, procedure_analysis, causal_chain, evidence_graph, and confidence_findings as the only reasoning substrate.
+- LLM is an explainability layer, not the reasoning engine.
+- Clearly separate confirmed facts, likely root cause, secondary effects, and alternative hypotheses.
+- Vendor speculation is forbidden unless vendor evidence exists in the JSON.
+- Unsupported overload/resource exhaustion claims are forbidden.
+- If cause mapping is unknown, preserve raw cause labels and mark the limit.
+- Mention numeric values and equipment IDs only when essential; copy them exactly from JSON.
+- Do not create causal ordering not supported by causal_chain or procedure_analysis.
 
 Return the answer in Korean.
 
@@ -47,21 +47,24 @@ Use exactly the following headings. Do not add other top-level headings.
 Each section must be no more than 5 lines.
 Use short bullets. Do not include tables. Do not write a data recap.
 
-## 장애 메커니즘
-- Interpret causal relationships across the observed failure patterns.
-- State which interface is more likely to be the preceding cause, if the JSON supports it.
-- Explain possible meanings of cause/message codes. If no mapping exists, mark it as experience-based.
+## Confirmed Findings
+- Only facts from confidence_findings.confirmed and semantic/procedure evidence.
 
-## 원인 분류
-- Classify the case as closest to one of: hardware fault, configuration error, traffic surge, transport network, or insufficient evidence.
-- Explain why this category is more plausible than the others.
+## Likely Root Cause
+- Use causal_chain.primary_event and confidence_findings.strong_suspicions.
+- State confidence carefully.
 
-## 조치 우선순위
-- State what should be checked first, second, and third with the reason.
-- Avoid generic checklists; make the priority specific to this data.
+## Secondary Effects
+- Separate downstream symptoms from primary cause.
 
-## 한계
-- State only what cannot be confirmed from this data alone.
+## Alternative Hypotheses
+- Use weak_hypotheses or explicitly say evidence is insufficient.
+
+## Recommended Actions
+- Recommend checks in priority order, tied to evidence.
+
+## Limitations
+- State what cannot be confirmed from this xDR-only evidence.
 
 RCA summary JSON:
 ```json
