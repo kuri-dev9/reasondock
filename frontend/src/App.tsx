@@ -237,13 +237,20 @@ function App() {
             setStreamingContent('RCA 작업이 대기 중입니다...');
           } else if (event.step === 'parsing' && visible) {
             setStreamingContent('xDR 파일 파싱 중입니다...');
-          } else if (event.step === 'aggregating' && event.content && visible) {
-            setStreamingContent(`${event.content}\n\n---\n\nLLM RCA 리포트 생성 중입니다...\n\n`);
+          } else if (event.step === 'aggregating' && visible) {
+            setStreamingContent('');
+          } else if (event.step === 'summary_token' && event.token && visible) {
+            setStreamingContent((prev) => prev + event.token);
+          } else if (event.step === 'summary_done' && visible) {
+            setStreamingContent((prev) => `${prev}\n`);
+          } else if (event.step === 'llm_prepare' && event.content && visible) {
+            setStreamingContent((prev) => prev + event.content);
           } else if (event.step === 'llm' && visible) {
             setStreamingContent((prev) => {
-              if (!prev) return 'LLM RCA 리포트 생성 중입니다...\n\n';
+              const message = event.content || 'LLM RCA 리포트 생성 중입니다...\n\n';
+              if (!prev) return message;
               if (prev.includes('LLM RCA 리포트 생성 중입니다')) return prev;
-              return `${prev}\n\n---\n\nLLM RCA 리포트 생성 중입니다...\n\n`;
+              return `${prev}${message}`;
             });
           } else if (event.step === 'llm_token' && event.token && visible) {
             setStreamingContent((prev) =>

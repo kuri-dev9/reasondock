@@ -26,6 +26,8 @@ RESULT_DIR = BASE_DIR / "rca_results"
 RCA_LLM_OPTIONS = {"temperature": 0.1, "num_predict": 8192}
 RCA_LLM_TIMEOUT_SECONDS = 1800.0
 RCA_HEARTBEAT_SECONDS = 30.0
+RCA_SUMMARY_STREAM_DELAY_SECONDS = 0.08
+RCA_STAGE_DELAY_SECONDS = 0.8
 
 _event_history: dict[int, list[dict[str, Any]]] = {}
 _event_queues: dict[int, set[asyncio.Queue[dict[str, Any]]]] = {}
@@ -112,17 +114,31 @@ async def _run_rca_job(job_id: int) -> None:
             summary = analyze_xdr_file(Path(job.file_path), job.filename)
 
             await _update_job(db, job_id, status="aggregating", progress=65, current_step="aggregating")
+            _publish(job_id, {"step": "aggregating", "progress": 65, "status": "aggregating"})
+            for line in summary["markdown"].splitlines():
+                _publish(job_id, {"step": "summary_token", "progress": 70, "token": f"{line}\n"})
+                await asyncio.sleep(RCA_SUMMARY_STREAM_DELAY_SECONDS)
+            _publish(job_id, {"step": "summary_done", "progress": 78, "status": "aggregating"})
+
             _publish(
                 job_id,
                 {
-                    "step": "aggregating",
-                    "progress": 65,
-                    "status": "aggregating",
-                    "content": summary["markdown"],
+                    "step": "llm_prepare",
+                    "progress": 80,
+                    "content": "\n---\n\n데이터 요약 완료. LLM 해석 요청을 준비합니다...\n",
                 },
             )
-
+            await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
             prompt = build_rca_prompt(summary)
+            _publish(
+                job_id,
+                {
+                    "step": "llm_prepare",
+                    "progress": 82,
+                    "content": "프롬프트를 구성했습니다. 장애 메커니즘과 조치 우선순위를 요청합니다...\n",
+                },
+            )
+            await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
             messages = [
                 {
                     "role": "system",
@@ -132,7 +148,15 @@ async def _run_rca_job(job_id: int) -> None:
             ]
 
             await _update_job(db, job_id, status="llm", progress=85, current_step="llm")
-            _publish(job_id, {"step": "llm", "progress": 85, "status": "llm"})
+            _publish(
+                job_id,
+                {
+                    "step": "llm",
+                    "progress": 85,
+                    "status": "llm",
+                    "content": "LLM RCA 리포트 생성 중입니다...\n\n",
+                },
+            )
 
             llm_response = ""
             thinking = ""
