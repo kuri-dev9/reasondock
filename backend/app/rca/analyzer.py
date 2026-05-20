@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from math import sqrt
 from typing import Any
 
+from app.rca.cause_dictionary import resolve_cause
+from app.rca.knowledge_loader import lookup_cause, lookup_error_cause, lookup_message
+
 
 CALL_TYPE = {
     "1": "Attach_MO",
@@ -30,7 +33,6 @@ ERROR_INTERFACE = {
     "8": "S13_Diameter",
 }
 
-
 def _int(value: Any, default: int = 0) -> int:
     try:
         return int(str(value))
@@ -53,13 +55,55 @@ def _bucket_label(epoch_microseconds: int) -> str:
     return dt.isoformat().replace("+00:00", "Z")
 
 
+def _message_label(interface: str, message: Any) -> str:
+    meta = lookup_message(interface, message)
+    if not meta:
+        return f"Message code {message}"
+
+    if meta.get("name") and meta.get("abbreviation"):
+        label = f"{meta['name']} ({meta['abbreviation']})"
+    elif meta.get("name"):
+        label = str(meta["name"])
+    elif meta.get("message"):
+        label = str(meta["message"])
+    elif meta.get("procedure"):
+        label = str(meta["procedure"])
+    elif meta.get("meaning"):
+        label = str(meta["meaning"])
+    else:
+        label = f"Message code {message}"
+    return f"{label} ({message})"
+
+
+def _cause_label(interface: str, message: Any, cause: Any) -> str:
+    if str(cause) == "900":
+        return "TIMEOUT (900)"
+
+    xdr_meta = lookup_error_cause(interface, cause)
+    if xdr_meta:
+        label = str(xdr_meta.get("meaning") or xdr_meta.get("name") or xdr_meta.get("message_type") or "Known cause")
+        if xdr_meta.get("group"):
+            label = f"{label} [{xdr_meta['group']}]"
+        return f"{label} ({cause})"
+
+    release_meta = lookup_cause(interface, cause)
+    if release_meta:
+        return f"{release_meta.get('name', 'Unknown cause')} ({cause})"
+
+    local_cause = resolve_cause(interface, message, cause)
+    if local_cause.get("known"):
+        return f"{local_cause.get('semantic')} ({cause})"
+    return f"Cause code {cause}"
+
+
 def _failure_key(record: dict[str, str]) -> str:
     interface = record.get("first_error_interface_protocol") or "0"
     cause = record.get("first_error_cause") or "0"
     message = record.get("first_error_message") or "0"
     interface_name = ERROR_INTERFACE.get(interface, f"INTERFACE_{interface}")
-    cause_name = "TIMEOUT" if cause == "900" else f"CAUSE_{cause}"
-    return f"{interface_name}|MESSAGE_{message}|{cause_name}"
+    message_name = _message_label(interface_name, message)
+    cause_name = _cause_label(interface_name, message, cause)
+    return f"{interface_name}|{message_name}|{cause_name}"
 
 
 def aggregate_records(records: list[dict[str, str]], parse_stats: dict[str, Any], filename: str) -> dict[str, Any]:
@@ -383,7 +427,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
             interface, message, cause = split_failure_key(item["key"])
             ratio = item["count"] / overall["fail"] if overall["fail"] else 0.0
             lines.append(
-                f"| {rank} | `{interface}` | `{message}` | `{cause}` | {item['count']:,} | {pct(ratio)} |"
+                f"| {rank} | `{interface}` | {message} | {cause} | {item['count']:,} | {pct(ratio)} |"
             )
     else:
         lines.append("| - | - | - | - | 0 | 0.00% |")

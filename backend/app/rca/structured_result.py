@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
-from app.rca.knowledge_loader import lookup_cause, lookup_procedure, lookup_taxonomy
+from app.rca.knowledge_loader import lookup_cause, lookup_error_cause, lookup_message, lookup_procedure, lookup_taxonomy
 from app.rca.procedure import procedure_phase
 
 
@@ -60,7 +60,10 @@ def _classification(summary: dict[str, Any], primary: dict[str, Any] | None) -> 
 
 def _event_evidence(event: dict[str, Any], index: int) -> dict[str, Any]:
     cause = event.get("cause", {})
-    meta = lookup_cause(str(event.get("interface", "")), cause.get("cause_code"))
+    interface = str(event.get("interface", ""))
+    xdr_meta = lookup_error_cause(interface, cause.get("cause_code"))
+    release_meta = lookup_cause(interface, cause.get("cause_code"))
+    message_meta = lookup_message(interface, event.get("message"))
     phase = procedure_phase(event)
     strength = "explicit_protocol_reject" if cause.get("known") else "kpi_only"
     if str(cause.get("cause_code")) == "900":
@@ -73,15 +76,17 @@ def _event_evidence(event: dict[str, Any], index: int) -> dict[str, Any]:
         "protocol": event.get("interface"),
         "interface": event.get("interface"),
         "message": event.get("message"),
+        "message_name": (event.get("message_info") or {}).get("name") or (message_meta or {}).get("name") or (message_meta or {}).get("message"),
         "cause_code": cause.get("cause_code"),
         "cause": cause.get("semantic"),
+        "cause_name": cause.get("safe_label"),
         "semantic_role": "explicit_protocol_error",
         "evidence_strength": strength,
         "procedure": event.get("call_type"),
         "procedure_phase": phase,
         "domain": cause.get("domain"),
         "description": cause.get("description"),
-        "dictionary_match": meta.get("id") if meta else None,
+        "dictionary_match": cause.get("dictionary_match") or (release_meta or {}).get("id") or (xdr_meta or {}).get("dictionary_section"),
     }
 
 
@@ -111,7 +116,9 @@ def _primary_cause(summary: dict[str, Any], events: list[dict[str, Any]]) -> tup
         )
 
     cause = primary_event.get("cause", {})
-    meta = lookup_cause(str(primary_event.get("interface", "")), cause.get("cause_code"))
+    interface = str(primary_event.get("interface", ""))
+    meta = lookup_cause(interface, cause.get("cause_code"))
+    xdr_meta = lookup_error_cause(interface, cause.get("cause_code"))
     taxonomy_ids = meta.get("related_taxonomy", []) if meta else []
     taxonomy = lookup_taxonomy(taxonomy_ids[0]) if taxonomy_ids else None
     domain = taxonomy[0] if taxonomy else cause.get("domain", "Unknown")
@@ -130,6 +137,7 @@ def _primary_cause(summary: dict[str, Any], events: list[dict[str, Any]]) -> tup
             "evidence_strength": "explicit_protocol_reject" if cause.get("known") else "kpi_only",
             "source": "causal_chain.primary_event",
             "dictionary_match": meta.get("id") if meta else None,
+            "xdr_dictionary_match": cause.get("dictionary_match") or (xdr_meta or {}).get("dictionary_section"),
             "taxonomy": taxonomy_ids,
         },
         meta,
@@ -283,6 +291,8 @@ def build_structured_reasoning_result(summary: dict[str, Any], events: list[dict
                 "structured_result.build_structured_reasoning_result",
             ],
             "dictionary_sources": [
+                "message_code_dictionary",
+                "cause_dictionary",
                 "cause_code_dictionary.release11.v1",
                 "procedure_dictionary.release11.v1",
                 "taxonomy.v1",
@@ -300,4 +310,3 @@ def build_structured_reasoning_result(summary: dict[str, Any], events: list[dict
             "장비 로그와 성능 카운터를 대조해 xDR 기반 원인 후보를 검증하세요.",
         ],
     }
-

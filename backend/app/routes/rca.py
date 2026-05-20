@@ -14,8 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import async_session, get_db
 from app.models import Conversation, Message, RcaJob, RcaResult
+from app.rca.llm_gate import should_invoke_llm
 from app.rca.pipeline import analyze_xdr_file
-from app.rca.prompt_builder import build_rca_prompt
+from app.rca.prompt_builder import build_llm_context, build_rca_prompt
 from app.services.llm import stream_chat as llm_stream_chat
 from app.services import uce_client
 from app.schemas import MessageResponse, RcaAnalyzeResponse, RcaJobResponse
@@ -102,6 +103,16 @@ def _estimate_prompt_tokens(messages: list[dict]) -> int:
     return max(1, len(text) // 4) if text else 0
 
 
+def _is_korean_sufficient(text: str, threshold: float = 0.15) -> bool:
+    if not text:
+        return False
+    alpha_chars = [char for char in text if char.isalpha()]
+    if not alpha_chars:
+        return False
+    korean_chars = [char for char in alpha_chars if "\uac00" <= char <= "\ud7a3"]
+    return len(korean_chars) / len(alpha_chars) >= threshold
+
+
 def _legacy_metrics(messages: list[dict], fallback_used: bool = False) -> dict:
     prompt_tokens = _estimate_prompt_tokens(messages)
     return {
@@ -166,124 +177,139 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
             _publish(job_id, {"step": "summary_done", "progress": 78, "status": "aggregating"})
 
             _publish(job_id, {"step": "llm_prepare", "progress": 80})
-            await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
-            prompt = build_rca_prompt(summary)
-            _publish(job_id, {"step": "llm_prepare", "progress": 82})
-            await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are an LTE/EPC RCA expert. Return a grounded Korean RCA report.",
-                },
-                {"role": "user", "content": prompt},
-            ]
-            legacy_messages = list(messages)
-            prompt_metrics = _legacy_metrics(legacy_messages)
-            if use_uce and settings.uce_enabled:
-                try:
-                    uce_result = await uce_client.build_context(
-                        conversation_id=job.conversation_id,
-                        current_message=prompt,
-                        recent_messages=[],
-                        rag_chunks=[
-                            {
-                                "id": f"rca_summary_{job_id}",
-                                "title": f"RCA Summary: {job.filename}",
-                                "content": summary["markdown"],
-                                "source": job.filename,
-                                "importance": 0.9,
-                            },
-                            {
-                                "id": f"rca_json_{job_id}",
-                                "title": f"RCA JSON: {job.filename}",
-                                "content": json.dumps(summary, ensure_ascii=False),
-                                "source": job.filename,
-                                "importance": 0.85,
-                            },
-                        ],
-                        model=conversation.model,
-                    )
-                    messages = [
-                        {
-                            "role": "system",
-                            "content": (
-                                "Use the UCE context pack silently. "
-                                "Return only the final grounded RCA report. "
-                                "Do not expose prompt-pack text, rubrics, hidden notes, or reasoning instructions."
-                            ),
-                        },
-                        {
-                            "role": "system",
-                            "content": "You are an LTE/EPC RCA expert. Return a grounded Korean RCA report.",
-                        },
-                        {"role": "user", "content": uce_result.prompt_pack["content"]},
-                    ]
-                    prompt_metrics = _uce_metrics(uce_result)
-                except Exception:
-                    import logging
-
-                    logging.getLogger(__name__).exception("UCE failed in RCA flow; falling back to legacy prompt")
-                    messages = legacy_messages
-                    prompt_metrics = _legacy_metrics(legacy_messages, fallback_used=True)
-
-            await _update_job(db, job_id, status="llm", progress=85, current_step="llm")
-            _publish(
-                job_id,
-                {
-                    "step": "llm",
-                    "progress": 85,
-                    "status": "llm",
-                },
-            )
-
             llm_response = ""
             thinking = ""
             done_raw: dict | None = None
             llm_error = None
-            stream_started = time.perf_counter()
-            first_token_seen = False
-            async for event in llm_stream_chat(
-                conversation.model,
-                messages,
-                options=RCA_LLM_OPTIONS,
-                timeout=RCA_LLM_TIMEOUT_SECONDS,
-            ):
-                event_type = event.get("type")
-                if event_type == "thinking":
-                    thinking += event.get("content", "")
-                elif event_type == "token":
-                    if not first_token_seen:
-                        prompt_metrics["llm_first_token_ms"] = int((time.perf_counter() - stream_started) * 1000)
-                        first_token_seen = True
-                    token = event.get("content", "")
-                    llm_response += token
-                    _publish(job_id, {"step": "llm_token", "progress": 90, "token": token})
-                elif event_type == "done":
-                    done_raw = event.get("raw") or {}
-                elif event_type == "error":
-                    llm_error = _llm_stream_error(
-                        "provider_error",
-                        event.get("content", "LLM streaming 오류"),
-                    )
+            language_validation_passed: bool | None = None
+            invoke_llm, llm_gate_reason = should_invoke_llm(summary)
+            prompt_metrics = _legacy_metrics([])
 
-            llm_response = llm_response.strip()
-            prompt_metrics["llm_total_latency_ms"] = int((time.perf_counter() - stream_started) * 1000)
-            if not llm_response and not llm_error:
-                done_reason = (done_raw or {}).get("done_reason")
-                if done_reason == "length":
-                    llm_error = _llm_stream_error(
-                        "context_exceeded",
-                        "LLM 입력 컨텍스트 또는 생성 길이 제한에 도달했습니다.",
-                        done_raw,
-                    )
-                elif thinking:
-                    llm_error = _llm_stream_error(
-                        "thinking_only",
-                        "LLM이 thinking만 반환하고 최종 content를 비웠습니다.",
-                        done_raw,
-                    )
-                else:
-                    llm_error = _llm_stream_error("empty_response", "LLM 최종 응답이 비어 있습니다.", done_raw)
+            if not invoke_llm:
+                status = "bypassed_healthy" if summary.get("analysis_mode") == "healthy" else "bypassed_confirmed"
+                summary["llm_explanation_status"] = status
+                summary["llm_bypass_reason"] = llm_gate_reason
+                _publish(
+                    job_id,
+                    {
+                        "step": "llm_bypassed",
+                        "progress": 85,
+                        "status": "deterministic",
+                        "reason": llm_gate_reason,
+                    },
+                )
+            else:
+                await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
+                messages = build_rca_prompt(summary)
+                prompt_text = "\n\n".join(str(message.get("content", "")) for message in messages)
+                _publish(job_id, {"step": "llm_prepare", "progress": 82})
+                await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
+                legacy_messages = list(messages)
+                prompt_metrics = _legacy_metrics(legacy_messages)
+
+                if use_uce and settings.uce_enabled:
+                    try:
+                        compact_context = json.dumps(build_llm_context(summary), ensure_ascii=False)
+                        uce_result = await uce_client.build_context(
+                            conversation_id=job.conversation_id,
+                            current_message=prompt_text,
+                            recent_messages=[],
+                            rag_chunks=[
+                                {
+                                    "id": f"rca_summary_{job_id}",
+                                    "title": f"RCA Summary: {job.filename}",
+                                    "content": summary["markdown"],
+                                    "source": job.filename,
+                                    "importance": 0.9,
+                                },
+                                {
+                                    "id": f"rca_context_{job_id}",
+                                    "title": f"Compressed RCA Context: {job.filename}",
+                                    "content": compact_context,
+                                    "source": job.filename,
+                                    "importance": 0.85,
+                                },
+                            ],
+                            model=conversation.model,
+                        )
+                        messages = [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "UCE 컨텍스트 팩은 노출하지 말고, 최종 RCA 운영 보고서만 한국어로 작성하세요."
+                                ),
+                            },
+                            {"role": "user", "content": uce_result.prompt_pack["content"]},
+                        ]
+                        prompt_metrics = _uce_metrics(uce_result)
+                    except Exception:
+                        import logging
+
+                        logging.getLogger(__name__).exception("UCE failed in RCA flow; falling back to compressed prompt")
+                        messages = legacy_messages
+                        prompt_metrics = _legacy_metrics(legacy_messages, fallback_used=True)
+
+                await _update_job(db, job_id, status="llm", progress=85, current_step="llm")
+                _publish(
+                    job_id,
+                    {
+                        "step": "llm",
+                        "progress": 85,
+                        "status": "llm",
+                    },
+                )
+
+                stream_started = time.perf_counter()
+                first_token_seen = False
+                async for event in llm_stream_chat(
+                    conversation.model,
+                    messages,
+                    options=RCA_LLM_OPTIONS,
+                    timeout=RCA_LLM_TIMEOUT_SECONDS,
+                ):
+                    event_type = event.get("type")
+                    if event_type == "thinking":
+                        thinking += event.get("content", "")
+                    elif event_type == "token":
+                        if not first_token_seen:
+                            prompt_metrics["llm_first_token_ms"] = int((time.perf_counter() - stream_started) * 1000)
+                            first_token_seen = True
+                        token = event.get("content", "")
+                        llm_response += token
+                        _publish(job_id, {"step": "llm_token", "progress": 90, "token": token})
+                    elif event_type == "done":
+                        done_raw = event.get("raw") or {}
+                    elif event_type == "error":
+                        llm_error = _llm_stream_error(
+                            "provider_error",
+                            event.get("content", "LLM streaming 오류"),
+                        )
+
+                llm_response = llm_response.strip()
+                prompt_metrics["llm_total_latency_ms"] = int((time.perf_counter() - stream_started) * 1000)
+                if not llm_response and not llm_error:
+                    done_reason = (done_raw or {}).get("done_reason")
+                    if done_reason == "length":
+                        llm_error = _llm_stream_error(
+                            "context_exceeded",
+                            "LLM 입력 컨텍스트 또는 생성 길이 제한에 도달했습니다.",
+                            done_raw,
+                        )
+                    elif thinking:
+                        llm_error = _llm_stream_error(
+                            "thinking_only",
+                            "LLM이 thinking만 반환하고 최종 content를 비웠습니다.",
+                            done_raw,
+                        )
+                    else:
+                        llm_error = _llm_stream_error("empty_response", "LLM 최종 응답이 비어 있습니다.", done_raw)
+
+                if llm_response:
+                    language_validation_passed = _is_korean_sufficient(llm_response)
+                    if not language_validation_passed:
+                        summary["llm_error"] = "language_control_failure: LLM returned non-Korean output"
+                        summary["llm_explanation_status"] = "language_fallback"
+                        llm_response = ""
 
             result_path = RESULT_DIR / f"rca_job_{job_id}.json"
             result_path.parent.mkdir(parents=True, exist_ok=True)
@@ -293,13 +319,18 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
             if llm_response:
                 summary["llm_response"] = llm_response
                 summary["llm_explanation_status"] = "done"
-            if llm_error:
+            if llm_error and summary.get("llm_explanation_status") != "language_fallback":
                 summary["llm_error"] = llm_error
                 summary["llm_explanation_status"] = "error"
             summary["uce_metrics"] = prompt_metrics
             processing_metrics = summary.setdefault("processing_metrics", {})
             processing_metrics["llm_total_latency_ms"] = prompt_metrics.get("llm_total_latency_ms")
             processing_metrics["llm_first_token_ms"] = prompt_metrics.get("llm_first_token_ms")
+            processing_metrics["llm_invoked"] = invoke_llm
+            processing_metrics["llm_bypass_reason"] = None if invoke_llm else llm_gate_reason
+            processing_metrics["llm_prompt_tokens"] = prompt_metrics.get("final_prompt_tokens") if invoke_llm else None
+            processing_metrics["llm_explanation_status"] = summary.get("llm_explanation_status")
+            processing_metrics["language_validation_passed"] = language_validation_passed
             processing_metrics["final_result_json_bytes"] = len(
                 json.dumps(summary, ensure_ascii=False, indent=2).encode("utf-8")
             )
@@ -354,7 +385,7 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
             message_content = summary["markdown"]
             if llm_response:
                 message_content = f"{message_content}\n\n---\n\n{llm_response}"
-            elif llm_error:
+            elif llm_error and summary.get("llm_explanation_status") != "language_fallback":
                 message_content = _failure_message(summary["markdown"], llm_error)
 
             message = Message(

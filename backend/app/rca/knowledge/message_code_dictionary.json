@@ -1,0 +1,2843 @@
+{
+  "interface_protocol": {
+    "description": "XDR first_error_interface_protocol / last_error_interface_protocol 필드 매핑",
+    "entries": [
+      {
+        "value": 0,
+        "interface_protocol": null
+      },
+      {
+        "value": 1,
+        "interface_protocol": "S6a_Diameter"
+      },
+      {
+        "value": 2,
+        "interface_protocol": "S1MME_S1AP"
+      },
+      {
+        "value": 3,
+        "interface_protocol": "S11_GTPv2C"
+      },
+      {
+        "value": 4,
+        "interface_protocol": "S10_GTPv2C"
+      },
+      {
+        "value": 5,
+        "interface_protocol": "S1MME_NAS_EMM"
+      },
+      {
+        "value": 6,
+        "interface_protocol": "S1MME_NAS_ESM"
+      },
+      {
+        "value": 7,
+        "interface_protocol": "S3_GTPv1C"
+      },
+      {
+        "value": 8,
+        "interface_protocol": "S13_Diameter"
+      }
+    ]
+  },
+  "direction": {
+    "description": "메시지 방향 코드",
+    "entries": [
+      {
+        "code": "Direction",
+        "meaning": "Meaning"
+      },
+      {
+        "code": "IN",
+        "meaning": "The message is transfered to MME."
+      },
+      {
+        "code": "OUT",
+        "meaning": "The message is transfered from MME."
+      },
+      {
+        "code": "BOTH",
+        "meaning": "The message is transfered to/from MME."
+      },
+      {
+        "code": "UD",
+        "meaning": "The direction of the message is undefined in 3GPP specificaiton."
+      }
+    ]
+  },
+  "Diameter": {
+    "protocol": "Diameter",
+    "description": "Diameter Command Code (first_error_message / last_error_message 필드)",
+    "entries": [
+      {
+        "name": "Unassigned",
+        "abbreviation": null,
+        "value": 256
+      },
+      {
+        "name": "Capabilities-Exchange Request / Answer",
+        "abbreviation": null,
+        "value": 257
+      },
+      {
+        "name": "Re-Auth Request / Answer",
+        "abbreviation": null,
+        "value": 258
+      },
+      {
+        "name": "Unassigned",
+        "abbreviation": null,
+        "value": 259
+      },
+      {
+        "name": null,
+        "abbreviation": "AMR/AMA",
+        "value": 260
+      },
+      {
+        "name": "Unassigned",
+        "abbreviation": null,
+        "value": 261
+      },
+      {
+        "name": null,
+        "abbreviation": "HAR/HAA",
+        "value": 262
+      },
+      {
+        "name": null,
+        "abbreviation": "AAR/AAA",
+        "value": 265
+      },
+      {
+        "name": "Diameter-EAP Request / Answer",
+        "abbreviation": null,
+        "value": 268
+      },
+      {
+        "name": "Accounting Request / Answer",
+        "abbreviation": null,
+        "value": 271
+      },
+      {
+        "name": "Credit-Control Request / Answer",
+        "abbreviation": null,
+        "value": 272
+      },
+      {
+        "name": "Unassigned",
+        "abbreviation": null,
+        "value": 273
+      },
+      {
+        "name": "Abort-Session Request / Answer",
+        "abbreviation": null,
+        "value": 274
+      },
+      {
+        "name": "Session-Termination Request / Answer",
+        "abbreviation": null,
+        "value": 275
+      },
+      {
+        "name": "Device-Watchdog Request / Answer",
+        "abbreviation": null,
+        "value": 280
+      },
+      {
+        "name": "Unassigned",
+        "abbreviation": null,
+        "value": 281
+      },
+      {
+        "name": "Disconnect-Peer Request / Answer",
+        "abbreviation": null,
+        "value": 282
+      },
+      {
+        "name": null,
+        "abbreviation": "UAR/UAA",
+        "value": 283
+      },
+      {
+        "name": null,
+        "abbreviation": "SAR/SAA",
+        "value": 284
+      },
+      {
+        "name": null,
+        "abbreviation": "LIR/LIA",
+        "value": 285
+      },
+      {
+        "name": null,
+        "abbreviation": "MAR/MAA",
+        "value": 286
+      },
+      {
+        "name": null,
+        "abbreviation": "RTR/RTA",
+        "value": 287
+      },
+      {
+        "name": null,
+        "abbreviation": "PPR/PPA",
+        "value": 288
+      },
+      {
+        "name": "User-Authorization-Request/Answer",
+        "abbreviation": "UAR/UAA",
+        "value": 300
+      },
+      {
+        "name": "Server-Assignment-Request/Answer",
+        "abbreviation": "SAR/SAA",
+        "value": 301
+      },
+      {
+        "name": "Location-Info-Request/Answer",
+        "abbreviation": "LIR/LIA",
+        "value": 302
+      },
+      {
+        "name": "Multimedia-Auth-Request/Answer",
+        "abbreviation": "MAR/MAA",
+        "value": 303
+      },
+      {
+        "name": "Registration-Termination-Request/Answer",
+        "abbreviation": "RTR/RTA",
+        "value": 304
+      },
+      {
+        "name": "Push-Profile-Request/Answer",
+        "abbreviation": "PPR/PPA",
+        "value": 305
+      },
+      {
+        "name": "User-Data-Request/Answer",
+        "abbreviation": "UDR/UDA",
+        "value": 306
+      },
+      {
+        "name": "Profile-Update-Request/Answer",
+        "abbreviation": "PUR/PUA",
+        "value": 307
+      },
+      {
+        "name": "Subscribe-Notifications-Request/Answer",
+        "abbreviation": "SNR/SNA",
+        "value": 308
+      },
+      {
+        "name": "Push-Notification-Request/Answer",
+        "abbreviation": "PNR/PNA",
+        "value": 309
+      },
+      {
+        "name": "Bootstrapping-Info-Request/Answer",
+        "abbreviation": "BIR/BIA",
+        "value": 310
+      },
+      {
+        "name": "Message-Process-Request/Answer",
+        "abbreviation": "MPR/MPA",
+        "value": 311
+      },
+      {
+        "name": "GBAPush-Info-Request/Answer",
+        "abbreviation": "GPR/GPI",
+        "value": 312
+      },
+      {
+        "name": "PDR / PDA",
+        "abbreviation": null,
+        "value": 314
+      },
+      {
+        "name": "Policy-Install-Request/Policy-Install-Answer",
+        "abbreviation": "PIR/PIA",
+        "value": 315
+      },
+      {
+        "name": "3GPP-Update-Location-Request/Answer",
+        "abbreviation": "ULR/ULA",
+        "value": 316
+      },
+      {
+        "name": "3GPP-Cancel-Location-Request/Answer",
+        "abbreviation": "CLR/CLA",
+        "value": 317
+      },
+      {
+        "name": "3GPP-Authentication-Information-Request/Answer",
+        "abbreviation": "AIR/AIA",
+        "value": 318
+      },
+      {
+        "name": "3GPP-Insert-Subscriber-Data-Request/Answer",
+        "abbreviation": "IDR/IDA",
+        "value": 319
+      },
+      {
+        "name": "3GPP-Delete-Subscriber-Data-Request/Answer",
+        "abbreviation": "DSR/DSA",
+        "value": 320
+      },
+      {
+        "name": "3GPP-Purge-UE-Request/Answer",
+        "abbreviation": "PUR/PUA",
+        "value": 321
+      },
+      {
+        "name": "3GPP-Reset-Request/Answer",
+        "abbreviation": "RSR/RSA",
+        "value": 322
+      },
+      {
+        "name": "3GPP-Notify-Request/Answer",
+        "abbreviation": "NOR/NOA",
+        "value": 323
+      },
+      {
+        "name": "3GPP-ME-Identity-Check-Request/Answer",
+        "abbreviation": "ECR/ECA",
+        "value": 324
+      },
+      {
+        "name": "MIP6-Request/Answer",
+        "abbreviation": "MIR/MIA",
+        "value": 325
+      },
+      {
+        "name": "QoS-Authorization-Request/QoS-Authorization-Answer",
+        "abbreviation": "QAR/QAA",
+        "value": 326
+      },
+      {
+        "name": "QoS-Install-Request/QoS-Install-Answer",
+        "abbreviation": "QIR/QIA",
+        "value": 327
+      },
+      {
+        "name": "Capabilities-Update-Request/Capabilities-Update-Answer",
+        "abbreviation": "CUR/CUA",
+        "value": 328
+      },
+      {
+        "name": "IKEv2-SK-Request/Answer",
+        "abbreviation": "ISR/ISA",
+        "value": 329
+      },
+      {
+        "name": "NAT-Control-Request/Answer",
+        "abbreviation": "NCR/NCA",
+        "value": 330
+      },
+      {
+        "name": "WIMAX-HRPD-SFF Request/Answer",
+        "abbreviation": null,
+        "value": 8388608
+      },
+      {
+        "name": "WiMAX-Diameter-EAP-Request/Answer",
+        "abbreviation": "WDER/WDEA",
+        "value": 8388609
+      },
+      {
+        "name": "WiMAX-Change-of-Authorization-Request/Answer",
+        "abbreviation": "WCAR/WCAA",
+        "value": 8388610
+      },
+      {
+        "name": "WiMAX-Reauthentication-Request/Answer",
+        "abbreviation": "WRAR/WRAA",
+        "value": 8388611
+      },
+      {
+        "name": "WiMAX-Session-Termination-Request/Answer",
+        "abbreviation": "WSTR/WSTA",
+        "value": 8388612
+      },
+      {
+        "name": "WiMAX-Abort-Session-Request/Answer",
+        "abbreviation": "WASR/WASA",
+        "value": 8388613
+      },
+      {
+        "name": "WiMAX-Home-Agent-IPv4-Request/Answer",
+        "abbreviation": "WHA4R/WHA4A",
+        "value": 8388614
+      },
+      {
+        "name": "WiMAX-Home-Agent-IPv6-Request/Answer",
+        "abbreviation": "WHA6R/WHA6A",
+        "value": 8388615
+      },
+      {
+        "name": "WiMAX-DHCP-Request/Answer",
+        "abbreviation": "WDHCPR/WDHCPA",
+        "value": 8388616
+      },
+      {
+        "name": "WiMAX-LAA-Request/Answer",
+        "abbreviation": "WLAAR/WLAA",
+        "value": 8388617
+      },
+      {
+        "name": "WiMAX-Location-Accounting-Request/Answer",
+        "abbreviation": "WLACR/WLACA",
+        "value": 8388618
+      },
+      {
+        "name": "WiMAX-Location-Measurement-Query-Request/Answer",
+        "abbreviation": "WLMQR/WLMQA",
+        "value": 8388619
+      },
+      {
+        "name": "3GPP-Provide-Location-Request/Answer",
+        "abbreviation": "PLR/PLA",
+        "value": 8388620
+      },
+      {
+        "name": "3GPP-Location-Report-Request/Answer",
+        "abbreviation": "LRR/LRA",
+        "value": 8388621
+      },
+      {
+        "name": "3GPP-LCS-Routing-Info-Request/Answer",
+        "abbreviation": "RIR/RIA",
+        "value": 8388622
+      },
+      {
+        "name": "Notif-Request/Answer",
+        "abbreviation": "NFR/NFA",
+        "value": 8388623
+      },
+      {
+        "name": "Msg-Interface-Request/Answer",
+        "abbreviation": "MIFR/MIFA",
+        "value": 8388624
+      },
+      {
+        "name": "Mobile-Application-Request/Answer",
+        "abbreviation": "MAPR/MAPA",
+        "value": 8388625
+      },
+      {
+        "name": "Update Location Request/Answer",
+        "abbreviation": "ULR/ULA",
+        "value": 8388626
+      },
+      {
+        "name": "Cancel Location Request/Answer",
+        "abbreviation": "CLR/CLA",
+        "value": 8388627
+      },
+      {
+        "name": "Juniper-Sync-Event",
+        "abbreviation": "JSE",
+        "value": 8388628
+      },
+      {
+        "name": "Juniper-Session-Discovery",
+        "abbreviation": "JSD",
+        "value": 8388629
+      },
+      {
+        "name": "Query Profile Request/Answer",
+        "abbreviation": "QPR/QPA",
+        "value": 8388630
+      },
+      {
+        "name": "Subscription Information Application",
+        "abbreviation": "SIR/SIA",
+        "value": 8388631
+      },
+      {
+        "name": "Distributed Charging Request/Diameter Charging Answer",
+        "abbreviation": "DCR/DCA",
+        "value": 8388632
+      },
+      {
+        "name": "Ericsson Spending Limit Request/Answer",
+        "abbreviation": "SLR/SLA",
+        "value": 8388633
+      },
+      {
+        "name": "Ericsson Spending Status Notification Request/Answer",
+        "abbreviation": "SNR/SNA",
+        "value": 8388634
+      },
+      {
+        "name": "Spending-Limit-Request/Answer",
+        "abbreviation": "SLR/SLA",
+        "value": 8388635
+      },
+      {
+        "name": "Spending-Status-Notification-Request/Answer",
+        "abbreviation": "SNR/SNA",
+        "value": 8388636
+      },
+      {
+        "name": "TDF-Session-Request/Answer",
+        "abbreviation": "TSR/TSA",
+        "value": 8388637
+      },
+      {
+        "name": "3GPP-Update-VCSG-Location-Request/Answer",
+        "abbreviation": "UVR/UVA",
+        "value": 8388638
+      },
+      {
+        "name": "Device-Action-Request/Answer",
+        "abbreviation": "DAR/DAA",
+        "value": 8388639
+      },
+      {
+        "name": "Device-Notification-Request/Answer",
+        "abbreviation": "DNR/DNA",
+        "value": 8388640
+      },
+      {
+        "name": "Subscriber-Information-Request/Answer",
+        "abbreviation": "SIR/SIA",
+        "value": 8388641
+      },
+      {
+        "name": "Cancel-VCSG-Location-Request/Answer",
+        "abbreviation": "CVR/CVA",
+        "value": 8388642
+      },
+      {
+        "name": "Device-Trigger-Request/Answer",
+        "abbreviation": "DTR/DTA",
+        "value": 8388643
+      },
+      {
+        "name": "Delivery-Report-Request/Answer",
+        "abbreviation": "DRR/DRA",
+        "value": 8388644
+      },
+      {
+        "name": "MO-Forward-Short-Message Request/Answer",
+        "abbreviation": "OFR/OFA",
+        "value": 8388645
+      },
+      {
+        "name": "MT-Forward-Short-Message Request/Answer",
+        "abbreviation": "TFR/TFA",
+        "value": 8388646
+      },
+      {
+        "name": "Send-Routing-Info-for-SM-Request/Answer",
+        "abbreviation": "SRR/SRA",
+        "value": 8388647
+      },
+      {
+        "name": "Alert-Service-Centre-Request/Answer",
+        "abbreviation": "ALR/ALA",
+        "value": 8388648
+      },
+      {
+        "name": "Report-SM-Delivery-Status-Request/Answer",
+        "abbreviation": "RDR/RDA",
+        "value": 8388649
+      },
+      {
+        "name": "Trigger-Establishment-Request/Answer",
+        "abbreviation": "TER/TEA",
+        "value": 8388656
+      },
+      {
+        "name": "GCS-Action-Request/Answer",
+        "abbreviation": "GAR/GAA",
+        "value": 8388662
+      },
+      {
+        "name": "GCS-Notification-Request/Answer",
+        "abbreviation": "GNR/GNA",
+        "value": 8388663
+      },
+      {
+        "name": "ProSe-Subscriber-Information-Request/Answer",
+        "abbreviation": "PIR/PIA",
+        "value": 8388664
+      },
+      {
+        "name": "Update-ProSe-Subscriber-Data-Request/Answer",
+        "abbreviation": "UPR/UPA",
+        "value": 8388665
+      },
+      {
+        "name": "ProSe-Notify-Request/Answer",
+        "abbreviation": "PNR/PNA",
+        "value": 8388666
+      },
+      {
+        "name": "ProSe-Authorization-Request/Answer",
+        "abbreviation": "PAR/PAA",
+        "value": 8388668
+      },
+      {
+        "name": "ProSe-Discovery-Request/Answer",
+        "abbreviation": "PDR/PDA",
+        "value": 8388669
+      },
+      {
+        "name": "ProSe-Match-Request/Answer",
+        "abbreviation": "PMR/PMA",
+        "value": 8388670
+      },
+      {
+        "name": "ProSe-Match-Report-Info-Request/Answer",
+        "abbreviation": "PIR/PIA",
+        "value": 8388671
+      },
+      {
+        "name": "ProSe-Proximity-Request/Answer",
+        "abbreviation": "PRR/PRA",
+        "value": 8388672
+      },
+      {
+        "name": "ProSe-Location-Update-Request/Answer",
+        "abbreviation": "PLR/PLA",
+        "value": 8388673
+      },
+      {
+        "name": "ProSe-Alert-Request/Answer",
+        "abbreviation": "ALR/ALA",
+        "value": 8388674
+      },
+      {
+        "name": "ProSe-Cancellation-Request/Answer",
+        "abbreviation": "RPR/RPA",
+        "value": 8388675
+      },
+      {
+        "name": "ProXimity-Action-Request/Answer",
+        "abbreviation": "PXR/PXA",
+        "value": 8388676
+      },
+      {
+        "name": "ProSe-Initial-Location-Information-Request/Answer",
+        "abbreviation": "PSR/PSA",
+        "value": 8388713
+      },
+      {
+        "name": "Configuration-Information-Request/Answer",
+        "abbreviation": "CIR/CIA",
+        "value": 8388718
+      },
+      {
+        "name": "Reporting-Information- Request/Answer",
+        "abbreviation": "RIR/RIA",
+        "value": 8388719
+      },
+      {
+        "name": "Non-Aggregated-RUCI-Report-Request/Answer",
+        "abbreviation": "NRR/NRA",
+        "value": 8388720
+      },
+      {
+        "name": "Aggregated-RUCI-Report-Request/Answer",
+        "abbreviation": "ARR/ARA",
+        "value": 8388721
+      },
+      {
+        "name": "Modify-Uecontext-Request/Answer",
+        "abbreviation": "MUR/MUA",
+        "value": 8388722
+      },
+      {
+        "name": "Background-Data-Transfer-Request/Answer",
+        "abbreviation": "BTR/BTA",
+        "value": 8388723
+      },
+      {
+        "name": "Network-Status-Request/Answer",
+        "abbreviation": "NSR/NSA",
+        "value": 8388724
+      },
+      {
+        "name": "Network-Status-Continuous-Report-Request/Answer",
+        "abbreviation": "NCR/NCA",
+        "value": 8388725
+      },
+      {
+        "name": "Experimental code",
+        "abbreviation": null,
+        "value": 16777214
+      },
+      {
+        "name": "Experimental code",
+        "abbreviation": null,
+        "value": 16777215
+      }
+    ]
+  },
+  "S1AP": {
+    "protocol": "S1AP",
+    "description": "S1AP Elementary Procedures (first_error_message / last_error_message 필드)",
+    "entries": [
+      {
+        "procedure": "HandoverPreparation",
+        "code": 0,
+        "initiating_message": {
+          "message": "HANDOVER REQUIRED",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "HANDOVER COMMAND",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": {
+          "message": "HANDOVER PREPARATION FAILURE",
+          "direction": "OUT"
+        }
+      },
+      {
+        "procedure": "HandoverResourceAllocation",
+        "code": 1,
+        "initiating_message": {
+          "message": "HANDOVER REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "HANDOVER REQUEST ACKNOWLEDGE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": {
+          "message": "HANDOVER FAILURE",
+          "direction": "IN"
+        }
+      },
+      {
+        "procedure": "HandoverNotification",
+        "code": 2,
+        "initiating_message": {
+          "message": "HANDOVER NOTIFY",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "PathSwitchRequest",
+        "code": 3,
+        "initiating_message": {
+          "message": "PATH SWITCH REQUEST",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "PATH SWITCH REQUEST ACKNOWLEDGE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": {
+          "message": "PATH SWITCH REQUEST FAILURE",
+          "direction": "OUT"
+        }
+      },
+      {
+        "procedure": "HandoverCancel",
+        "code": 4,
+        "initiating_message": {
+          "message": "HANDOVER CANCEL",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "HANDOVER CANCEL ACKNOWLEDGE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "E_RABSetup",
+        "code": 5,
+        "initiating_message": {
+          "message": "E-RAB SETUP REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "E-RAB SETUP RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "E_RABModify",
+        "code": 6,
+        "initiating_message": {
+          "message": "E-RAB MODIFY REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "E-RAB MODIFY RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "E_RABRelease",
+        "code": 7,
+        "initiating_message": {
+          "message": "E-RAB RELEASE COMMAND",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "E-RAB RELEASE RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "E_RABReleaseIndication",
+        "code": 8,
+        "initiating_message": {
+          "message": "E-RAB RELEASE INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "InitialContextSetup",
+        "code": 9,
+        "initiating_message": {
+          "message": "INITIAL CONTEXT SETUP REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "INITIAL CONTEXT SETUP RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": {
+          "message": "INITIAL CONTEXT SETUP FAILURE",
+          "direction": "IN"
+        }
+      },
+      {
+        "procedure": "Paging",
+        "code": 10,
+        "initiating_message": {
+          "message": "PAGING",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "downlinkNASTransport",
+        "code": 11,
+        "initiating_message": {
+          "message": "DOWNLINK NAS TRANSPORT",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "initialUEMessage",
+        "code": 12,
+        "initiating_message": {
+          "message": "INITIAL UE MESSAGE",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "uplinkNASTransport",
+        "code": 13,
+        "initiating_message": {
+          "message": "UPLINK NAS TRANSPORT",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "Reset",
+        "code": 14,
+        "initiating_message": {
+          "message": "RESET",
+          "direction": "BOTH"
+        },
+        "successful_outcome": {
+          "message": "RESET ACKNOWLEDGE",
+          "direction": "BOTH"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "ErrorIndication",
+        "code": 15,
+        "initiating_message": {
+          "message": "ERROR INDICATION",
+          "direction": "BOTH"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "NASNonDeliveryIndication",
+        "code": 16,
+        "initiating_message": {
+          "message": "NAS NON DELIVERY INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "S1Setup",
+        "code": 17,
+        "initiating_message": {
+          "message": "S1 SETUP REQUEST",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "S1 SETUP RESPONSE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": {
+          "message": "S1 SETUP FAILURE",
+          "direction": "OUT"
+        }
+      },
+      {
+        "procedure": "UEContextReleaseRequest",
+        "code": 18,
+        "initiating_message": {
+          "message": "UE CONTEXT RELEASE REQUEST",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "DownlinkS1cdma2000tunneling",
+        "code": 19,
+        "initiating_message": {
+          "message": "DOWNLINK S1 CDMA2000 TUNNELLING",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UplinkS1cdma2000tunneling",
+        "code": 20,
+        "initiating_message": {
+          "message": "UPLINK S1 CDMA2000 TUNNELLING",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEContextModification",
+        "code": 21,
+        "initiating_message": {
+          "message": "UE CONTEXT MODIFICATION REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "UE CONTEXT MODIFICATION RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": {
+          "message": "UE CONTEXT MODIFICATION FAILURE",
+          "direction": "IN"
+        }
+      },
+      {
+        "procedure": "UECapabilityInfoIndication",
+        "code": 22,
+        "initiating_message": {
+          "message": "UE CAPABILITY INFO INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEContextRelease",
+        "code": 23,
+        "initiating_message": {
+          "message": "UE CONTEXT RELEASE COMMAND",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "UE CONTEXT RELEASE COMPLETE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "eNBStatusTransfer",
+        "code": 24,
+        "initiating_message": {
+          "message": "eNB STATUS TRANSFER",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "MMEStatusTransfer",
+        "code": 25,
+        "initiating_message": {
+          "message": "MME STATUS TRANSFER",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "DeactivateTrace",
+        "code": 26,
+        "initiating_message": {
+          "message": "DEACTIVATE TRACE",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "TraceStart",
+        "code": 27,
+        "initiating_message": {
+          "message": "TRACE START",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "TraceFailureIndication",
+        "code": 28,
+        "initiating_message": {
+          "message": "TRACE FAILURE INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "ENBConfigurationUpdate",
+        "code": 29,
+        "initiating_message": {
+          "message": "ENB CONFIGURATION UPDATE",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "ENB CONFIGURATION UPDATE ACKNOWLEDGE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": {
+          "message": "ENB CONFIGURATION UPDATE FAILURE",
+          "direction": "OUT"
+        }
+      },
+      {
+        "procedure": "MMEConfigurationUpdate",
+        "code": 30,
+        "initiating_message": {
+          "message": "MME CONFIGURATION UPDATE",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "MME CONFIGURAION UPDATE ACKNOWLEDGE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": {
+          "message": "MME CONFIGURATION UPDATE FAILURE",
+          "direction": "IN"
+        }
+      },
+      {
+        "procedure": "LocationReportingControl",
+        "code": 31,
+        "initiating_message": {
+          "message": "LOCATION REPORTING CONTROL",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "LocationReportingFailureIndication",
+        "code": 32,
+        "initiating_message": {
+          "message": "LOCATION REPORTING FAILURE INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "LocationReport",
+        "code": 33,
+        "initiating_message": {
+          "message": "LOCATION REPORT",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "OverloadStart",
+        "code": 34,
+        "initiating_message": {
+          "message": "OVERLOAD START",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "OverloadStop",
+        "code": 35,
+        "initiating_message": {
+          "message": "OVERLOAD STOP",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "WriteReplaceWarning",
+        "code": 36,
+        "initiating_message": {
+          "message": "WRITE-REPLACE WARNING REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "WRITE-REPLACE WARNING RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "eNBDirectInformationTransfer",
+        "code": 37,
+        "initiating_message": {
+          "message": "eNB DIRECT INFORMATION TRANSFER",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "MMEDirectInformationTransfer",
+        "code": 38,
+        "initiating_message": {
+          "message": "MME DIRECT INFORMATION TRANSFER",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "PrivateMessage",
+        "code": 39,
+        "initiating_message": {
+          "message": "PRIVATE MESSAGE",
+          "direction": "UD"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "eNBConfigurationTransfer",
+        "code": 40,
+        "initiating_message": {
+          "message": "eNB CONFIGURATION TRANSFER",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "MMEConfigurationTransfer",
+        "code": 41,
+        "initiating_message": {
+          "message": "MME CONFIGURATION TRANSFER",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "CellTrafficTrace",
+        "code": 42,
+        "initiating_message": {
+          "message": "CELL TRAFFIC TRACE",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "Kill",
+        "code": 43,
+        "initiating_message": {
+          "message": "KILL REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "KILL RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "downlinkUEAssociatedLPPaTransport",
+        "code": 44,
+        "initiating_message": {
+          "message": "DOWNLINK UE ASSOCIATED LPPA TRANSPORT",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "uplinkUEAssociatedLPPaTransport",
+        "code": 45,
+        "initiating_message": {
+          "message": "UPLINK UE ASSOCIATED LPPA TRANSPORT",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "downlinkNonUEAssociatedLPPaTransport",
+        "code": 46,
+        "initiating_message": {
+          "message": "DOWNLINK NON UE ASSOCIATED LPPA TRANSPORT",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "uplinkNonUEAssociatedLPPaTransport",
+        "code": 47,
+        "initiating_message": {
+          "message": "UPLINK NON UE ASSOCIATED LPPA TRANSPORT",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UERadioCapabilityMatch",
+        "code": 48,
+        "initiating_message": {
+          "message": "UE RADIO CAPABILITY MATCH REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": {
+          "message": "UE RADIO CAPABILITY MATCH RESPONSE",
+          "direction": "IN"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "PWSRestartIndication",
+        "code": 49,
+        "initiating_message": {
+          "message": "PWS RESTART INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "E-RABModificationIndication",
+        "code": 50,
+        "initiating_message": {
+          "message": "E-RAB MODIFICATION INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "E-RAB MODIFICATION CONFIRM",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "PWSFailureIndication",
+        "code": 51,
+        "initiating_message": {
+          "message": "PWS FAILURE INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "RerouteNASRequest",
+        "code": 52,
+        "initiating_message": {
+          "message": "REROUTE NAS REQUEST",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEContextModificationIndication",
+        "code": 53,
+        "initiating_message": {
+          "message": "UE CONTEXT MODIFICATION INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "UE CONTEXT MODIFICATION CONFIRM",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "ConnectionEstablishmentIndication",
+        "code": 54,
+        "initiating_message": {
+          "message": "CONNECTION ESTABLISHMENT INDICATION",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEContextSuspend",
+        "code": 55,
+        "initiating_message": {
+          "message": "UE CONTEXT SUSPEND REQUEST",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "UE CONTEXT SUSPEND RESPONSE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEContextResume",
+        "code": 56,
+        "initiating_message": {
+          "message": "UE CONTEXT RESUME REQUEST",
+          "direction": "IN"
+        },
+        "successful_outcome": {
+          "message": "UE CONTEXT RESUME RESPONSE",
+          "direction": "OUT"
+        },
+        "unsuccessful_outcome": {
+          "message": "UE CONTEXT RESUME FAILURE",
+          "direction": "OUT"
+        }
+      },
+      {
+        "procedure": "NASDeliveryIndication",
+        "code": 57,
+        "initiating_message": {
+          "message": "NAS DELIVERY INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "RetrieveUEInformation",
+        "code": 58,
+        "initiating_message": {
+          "message": "RETRIEVE UE INFORMATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "UEInformationTransfer",
+        "code": 59,
+        "initiating_message": {
+          "message": "UE INFORMATION TRANSFER",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "eNBCPRelocationIndication",
+        "code": 60,
+        "initiating_message": {
+          "message": "eNB CP RELOCATION INDICATION",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "MMECPRelocationIndication",
+        "code": 61,
+        "initiating_message": {
+          "message": "MME CP RELOCATION INDICATION",
+          "direction": "OUT"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      },
+      {
+        "procedure": "SecondaryRATDataUsageReport",
+        "code": 62,
+        "initiating_message": {
+          "message": "SECONDARY RAT DATA USAGE REPORT",
+          "direction": "IN"
+        },
+        "successful_outcome": null,
+        "unsuccessful_outcome": null
+      }
+    ]
+  },
+  "NAS_EMM": {
+    "protocol": "NAS-EMM",
+    "description": "NAS EMM 메시지 코드 (emm_error_message 필드)",
+    "entries": [
+      {
+        "message": "ATTACH_REQUEST",
+        "hex": "0x41",
+        "decimal": 65
+      },
+      {
+        "message": "ATTACH_ACCEPT",
+        "hex": "0x42",
+        "decimal": 66
+      },
+      {
+        "message": "ATTACH_COMPLETE",
+        "hex": "0x43",
+        "decimal": 67
+      },
+      {
+        "message": "ATTACH_REJECT",
+        "hex": "0x44",
+        "decimal": 68
+      },
+      {
+        "message": "DETACH_REQUEST",
+        "hex": "0x45",
+        "decimal": 69
+      },
+      {
+        "message": "DETACH_ACCEPT",
+        "hex": "0x46",
+        "decimal": 70
+      },
+      {
+        "message": "TRACKING_AREA_UPDATE_REQUEST",
+        "hex": "0x48",
+        "decimal": 72
+      },
+      {
+        "message": "TRACKING_AREA_UPDATE_ACCEPT",
+        "hex": "0x49",
+        "decimal": 73
+      },
+      {
+        "message": "TRACKING_AREA_UPDATE_COMPLETE",
+        "hex": "0x4A",
+        "decimal": 74
+      },
+      {
+        "message": "TRACKING_AREA_UPDATE_REJECT",
+        "hex": "0x4B",
+        "decimal": 75
+      },
+      {
+        "message": "EXTENDED_SERVICE_REQUEST",
+        "hex": "0x4C",
+        "decimal": 76
+      },
+      {
+        "message": "SERVICE_REQUEST",
+        "hex": "0x80",
+        "decimal": 128
+      },
+      {
+        "message": "SERVICE_REJECT",
+        "hex": "0x4E",
+        "decimal": 78
+      },
+      {
+        "message": "GUTI_REALLOCATION_COMMAND",
+        "hex": "0x50",
+        "decimal": 80
+      },
+      {
+        "message": "GUTI_REALLOCATION_COMPLETE",
+        "hex": "0x51",
+        "decimal": 81
+      },
+      {
+        "message": "AUTHENTICATION_REQUEST",
+        "hex": "0x52",
+        "decimal": 82
+      },
+      {
+        "message": "AUTHENTICATION_RESPONSE",
+        "hex": "0x53",
+        "decimal": 83
+      },
+      {
+        "message": "AUTHENTICATION_REJECT",
+        "hex": "0x54",
+        "decimal": 84
+      },
+      {
+        "message": "AUTHENTICATION_FAILURE",
+        "hex": "0x5C",
+        "decimal": 92
+      },
+      {
+        "message": "IDENTITY_REQUEST",
+        "hex": "0x55",
+        "decimal": 85
+      },
+      {
+        "message": "IDENTITY_RESPONSE",
+        "hex": "0x56",
+        "decimal": 86
+      },
+      {
+        "message": "SECURITY_MODE_COMMAND",
+        "hex": "0x5D",
+        "decimal": 93
+      },
+      {
+        "message": "SECURITY_MODE_COMPLETE",
+        "hex": "0x5E",
+        "decimal": 94
+      },
+      {
+        "message": "SECURITY_MODE_REJECT",
+        "hex": "0x5F",
+        "decimal": 95
+      },
+      {
+        "message": "EMM_STATUS",
+        "hex": "0x60",
+        "decimal": 96
+      },
+      {
+        "message": "EMM_INFORMATION",
+        "hex": "0x61",
+        "decimal": 97
+      },
+      {
+        "message": "DOWNLINK_NAS_TRANSPORT",
+        "hex": "0x62",
+        "decimal": 98
+      },
+      {
+        "message": "UPLINK_NAS_TRANSPORT",
+        "hex": "0x63",
+        "decimal": 99
+      },
+      {
+        "message": "CS_SERVICE_NOTIFICATION",
+        "hex": "0x64",
+        "decimal": 100
+      },
+      {
+        "message": "DOWNLINK_GENERIC_NAS_TRANSPORT",
+        "hex": "0x68",
+        "decimal": 104
+      },
+      {
+        "message": "UPLINK_GENERIC_NAS_TRANSPORT",
+        "hex": "0x69",
+        "decimal": 105
+      }
+    ]
+  },
+  "NAS_ESM": {
+    "protocol": "NAS-ESM",
+    "description": "NAS ESM 메시지 코드 (esm_error_message 필드)",
+    "entries": [
+      {
+        "message": "ACTIVATE_DEFAULT_EPS_BEARER_CONTEXT_REQUEST",
+        "hex": "0xC1",
+        "decimal": 193
+      },
+      {
+        "message": "ACTIVATE_DEFAULT_EPS_BEARER_CONTEXT_ACCEPT",
+        "hex": "0xC2",
+        "decimal": 194
+      },
+      {
+        "message": "ACTIVATE_DEFAULT_EPS_BEARER_CONTEXT_REJECT",
+        "hex": "0xC3",
+        "decimal": 195
+      },
+      {
+        "message": "ACTIVATE_DEDICATED_EPS_BEARER_CONTEXT_REQUEST",
+        "hex": "0xC5",
+        "decimal": 197
+      },
+      {
+        "message": "ACTIVATE_DEDICATED_EPS_BEARER_CONTEXT_ACCEPT",
+        "hex": "0xC6",
+        "decimal": 198
+      },
+      {
+        "message": "ACTIVATE_DEDICATED_EPS_BEARER_CONTEXT_REJECT",
+        "hex": "0xC7",
+        "decimal": 199
+      },
+      {
+        "message": "MODIFY_EPS_BEARER_CONTEXT_REQUEST",
+        "hex": "0xC9",
+        "decimal": 201
+      },
+      {
+        "message": "MODIFY_EPS_BEARER_CONTEXT_ACCEPT",
+        "hex": "0xCA",
+        "decimal": 202
+      },
+      {
+        "message": "MODIFY_EPS_BEARER_CONTEXT_REJECT",
+        "hex": "0xCB",
+        "decimal": 203
+      },
+      {
+        "message": "DEACTIVATE_EPS_BEARER_CONTEXT_ACCEPT",
+        "hex": "0xCD",
+        "decimal": 205
+      },
+      {
+        "message": "DEACTIVATE_EPS_BEARER_CONTEXT_REQUEST",
+        "hex": "0xCE",
+        "decimal": 506
+      },
+      {
+        "message": "PDN_CONNECTIVITY_REQUEST",
+        "hex": "0xD0",
+        "decimal": 208
+      },
+      {
+        "message": "PDN_CONNECTIVITY_REJECT",
+        "hex": "0xD1",
+        "decimal": 209
+      },
+      {
+        "message": "PDN_DISCONNECT_REQUEST",
+        "hex": "0xD2",
+        "decimal": 210
+      },
+      {
+        "message": "PDN_DISCONNECT_REJECT",
+        "hex": "0xD3",
+        "decimal": 211
+      },
+      {
+        "message": "BEARER_RESOURCE_ALLOCATION_REQUEST",
+        "hex": "0xD4",
+        "decimal": 212
+      },
+      {
+        "message": "BEARER_RESOURCE_ALLOCATION_REJECT",
+        "hex": "0xD5",
+        "decimal": 213
+      },
+      {
+        "message": "BEARER_RESOURCE_MODIFICATION_REQUEST",
+        "hex": "0xD6",
+        "decimal": 214
+      },
+      {
+        "message": "BEARER_RESOURCE_MODIFICATION_REJECT",
+        "hex": "0xD7",
+        "decimal": 215
+      },
+      {
+        "message": "ESM_INFORMATION_REQUEST",
+        "hex": "0xD9",
+        "decimal": 217
+      },
+      {
+        "message": "ESM_INFORMATION_RESPONSE",
+        "hex": "0xDA",
+        "decimal": 218
+      },
+      {
+        "message": "NOTIFICATION",
+        "hex": "0xDB",
+        "decimal": 219
+      },
+      {
+        "message": "ESM_STATUS",
+        "hex": "0xE8",
+        "decimal": 232
+      }
+    ]
+  },
+  "GTPv2C": {
+    "protocol": "GTPv2-C",
+    "description": "GTPv2-C 메시지 코드 (s11_error_message / s10_error_message 필드)",
+    "entries": [
+      {
+        "message": "ECHO_REQUEST",
+        "value": 1,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "ECHO_RESPONSE",
+        "value": 2,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "VERSION_NOT_SUPPORTED_INDICATION",
+        "value": 3,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_SESSION_REQUEST",
+        "value": 32,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_SESSION_RESPONSE",
+        "value": 33,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_BEARER_REQUEST",
+        "value": 34,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_BEARER_RESPONSE",
+        "value": 35,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_SESSION_REQUEST",
+        "value": 36,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_SESSION_RESPONSE",
+        "value": 37,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CHANGE_NOTIFICATION_REQUEST",
+        "value": 38,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CHANGE_NOTIFICATION_RESPONSE",
+        "value": 39,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_BEARER_COMMAND",
+        "value": 64,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_BEARER_FAILURE_INDICATION",
+        "value": 65,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_BEARER_COMMAND",
+        "value": 66,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_BEARER_FAILURE_INDICATION",
+        "value": 67,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "BEARER_RESOURCE_COMMAND",
+        "value": 68,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "BEARER_RESOURCE_FAILURE_INDICATION",
+        "value": 69,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DOWNLINK_DATA_NOTIFICATION_FAILURE_INDICATION",
+        "value": 70,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "TRACE_SESSION_ACTIVATION",
+        "value": 71,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "TRACE_SESSION_DEACTIVATION",
+        "value": 72,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "STOP_PAGING_INDICATION",
+        "value": 73,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_BEARER_REQUEST",
+        "value": 95,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_BEARER_RESPONSE",
+        "value": 96,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UPDATE_BEARER_REQUEST",
+        "value": 97,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UPDATE_BEARER_RESPONSE",
+        "value": 98,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_BEARER_REQUEST",
+        "value": 99,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_BEARER_RESPONSE",
+        "value": 100,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_PDN_CONNECTION_SET_REQUEST",
+        "value": 101,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_PDN_CONNECTION_SET_RESPONSE",
+        "value": 102,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "PGW_DOWNLINK_TRIGGERING_NOTIFICATION",
+        "value": 103,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "PGW_DOWNLINK_TRIGGERING_ACKNOWLEDGE",
+        "value": 104,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "IDENTIFICATION_REQUEST",
+        "value": 128,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "IDENTIFICATION_RESPONSE",
+        "value": 129,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CONTEXT_REQUEST",
+        "value": 130,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CONTEXT_RESPONSE",
+        "value": 131,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CONTEXT_ACKNOWLEDGE",
+        "value": 132,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_RELOCATION_REQUEST",
+        "value": 133,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_RELOCATION_RESPONSE",
+        "value": 134,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_RELOCATION_COMPLETE_NOTIFICATION",
+        "value": 135,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_RELOCATION_COMPLETE_ACKNOWLEDGE",
+        "value": 136,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_ACCESS_CONTEXT_NOTIFICATION",
+        "value": 137,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "FORWARD_ACCESS_CONTEXT_ACKNOWLEDGE",
+        "value": 138,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RELOCATION_CANCEL_REQUEST",
+        "value": 139,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RELOCATION_CANCEL_RESPONSE",
+        "value": 140,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CONFIGURATION_TRANSFER_TUNNEL",
+        "value": 141,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DETACH_NOTIFICATION",
+        "value": 149,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DETACH_ACKNOWLEDGE",
+        "value": 150,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CS_PAGING_INDICATION",
+        "value": 151,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RAN_INFORMATION_RELAY",
+        "value": 152,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "ALERT_MME_NOTIFICATION",
+        "value": 153,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "ALERT_MME_ACKNOWLEDGE",
+        "value": 154,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UE_ACTIVITY_NOTIFICATION",
+        "value": 155,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UE_ACTIVITY_ACKNOWLEDGE",
+        "value": 156,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "ISR_STATUS_INDICATION",
+        "value": 157,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_FORWARDING_TUNNEL_REQUEST",
+        "value": 160,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_FORWARDING_TUNNEL_RESPONSE",
+        "value": 161,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "SUSPEND_NOTIFICATION",
+        "value": 162,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "SUSPEND_ACKNOWLEDGE",
+        "value": 163,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RESUME_NOTIFICATION",
+        "value": 164,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RESUME_ACKNOWLEDGE",
+        "value": 165,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_INDIRECT_DATA_FORWARDING_TUNNEL_REQUEST",
+        "value": 166,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "CREATE_INDIRECT_DATA_FORWARDING_TUNNEL_RESPONSE",
+        "value": 167,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_INDIRECT_DATA_FORWARDING_TUNNEL_REQUEST",
+        "value": 168,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DELETE_INDIRECT_DATA_FORWARDING_TUNNEL_RESPONSE",
+        "value": 169,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RELEASE_ACCESS_BEARERS_REQUEST",
+        "value": 170,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "RELEASE_ACCESS_BEARERS_RESPONSE",
+        "value": 171,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DOWNLINK_DATA_NOTIFICATION",
+        "value": 176,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "DOWNLINK_DATA_NOTIFICATION_ACKNOWLEDGE",
+        "value": 177,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "PGW_RESTART_NOTIFICATION",
+        "value": 179,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "PGW_RESTART_NOTIFICATION_ACKNOWLEDGE",
+        "value": 180,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UPDATE_PDN_CONNECTION_SET_REQUEST",
+        "value": 200,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "UPDATE_PDN_CONNECTION_SET_RESPONSE",
+        "value": 201,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_ACCESS_BEARERS_REQUEST",
+        "value": 211,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MODIFY_ACCESS_BEARERS_RESPONSE",
+        "value": 212,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_START_REQUEST",
+        "value": 231,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_START_RESPONSE",
+        "value": 232,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_UPDATE_REQUEST",
+        "value": 233,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_UPDATE_RESPONSE",
+        "value": 234,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_STOP_REQUEST",
+        "value": 235,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      },
+      {
+        "message": "MBMS_SESSION_STOP_RESPONSE",
+        "value": 236,
+        "interfaces": [
+          "S11",
+          "S10"
+        ]
+      }
+    ]
+  },
+  "GTPv1C": {
+    "protocol": "GTPv1-C",
+    "description": "GTPv1-C 메시지 코드 (s3_error_message 필드)",
+    "entries": [
+      {
+        "message": "ECHO_REQUEST",
+        "value": 1
+      },
+      {
+        "message": "ECHO_RESPONSE",
+        "value": 2
+      },
+      {
+        "message": "VERSION_NOT_SUPPORTED",
+        "value": 3
+      },
+      {
+        "message": "NODE_ALIVE_REQUEST",
+        "value": 4
+      },
+      {
+        "message": "NODE_ALIVE_RESPONSE",
+        "value": 5
+      },
+      {
+        "message": "REDIRECTION_REQUEST",
+        "value": 6
+      },
+      {
+        "message": "REDIRECTION_RESPONSE",
+        "value": 7
+      },
+      {
+        "message": "CREATE_PDP_CONTEXT_REQUEST",
+        "value": 16
+      },
+      {
+        "message": "CREATE_PDP_CONTEXT_RESPONSE",
+        "value": 17
+      },
+      {
+        "message": "UPDATE_PDP_CONTEXT_REQUEST",
+        "value": 18
+      },
+      {
+        "message": "UPDATE_PDP_CONTEXT_RESPONSE",
+        "value": 19
+      },
+      {
+        "message": "DELETE_PDP_CONTEXT_REQUEST",
+        "value": 20
+      },
+      {
+        "message": "DELETE_PDP_CONTEXT_RESPONSE",
+        "value": 21
+      },
+      {
+        "message": "INITIATE_PDP_CONTEXT_ACTIVATION_REQUEST",
+        "value": 22
+      },
+      {
+        "message": "INITIATE_PDP_CONTEXT_ACTIVATION_RESPONSE",
+        "value": 23
+      },
+      {
+        "message": "ERROR_INDICATION_",
+        "value": 26
+      },
+      {
+        "message": "PDU_NOTIFICATION_REQUEST",
+        "value": 27
+      },
+      {
+        "message": "PDU_NOTIFICATION_RESPONSE",
+        "value": 28
+      },
+      {
+        "message": "PDU_NOTIFICATION_REJECT_REQUEST",
+        "value": 29
+      },
+      {
+        "message": "PDU_NOTIFICATION_REJECT_RESPONSE",
+        "value": 30
+      },
+      {
+        "message": "SUPPORTED_EXTENSION_HEADERS_NOTIFICATION",
+        "value": 31
+      },
+      {
+        "message": "SEND_ROUTEING_INFORMATION_FOR_GPRS_REQUEST",
+        "value": 32
+      },
+      {
+        "message": "SEND_ROUTEING_INFORMATION_FOR_GPRS_RESPONSE",
+        "value": 33
+      },
+      {
+        "message": "FAILURE_REPORT_REQUEST",
+        "value": 34
+      },
+      {
+        "message": "FAILURE_REPORT_RESPONSE",
+        "value": 35
+      },
+      {
+        "message": "NOTE_MS_GPRS_PRESENT_REQUEST",
+        "value": 36
+      },
+      {
+        "message": "NOTE_MS_GPRS_PRESENT_RESPONSE",
+        "value": 37
+      },
+      {
+        "message": "IDENTIFICATION_REQUEST",
+        "value": 48
+      },
+      {
+        "message": "IDENTIFICATION_RESPONSE",
+        "value": 49
+      },
+      {
+        "message": "SGSN_CONTEXT_REQUEST",
+        "value": 50
+      },
+      {
+        "message": "SGSN_CONTEXT_RESPONSE",
+        "value": 51
+      },
+      {
+        "message": "SGSN_CONTEXT_ACKNOWLEDGE",
+        "value": 52
+      },
+      {
+        "message": "FORWARD_RELOCATION_REQUEST",
+        "value": 53
+      },
+      {
+        "message": "FORWARD_RELOCATION_RESPONSE",
+        "value": 54
+      },
+      {
+        "message": "FORWARD_RELOCATION_COMPLETE",
+        "value": 55
+      },
+      {
+        "message": "RELOCATION_CANCEL_REQUEST",
+        "value": 56
+      },
+      {
+        "message": "RELOCATION_CANCEL_RESPONSE",
+        "value": 57
+      },
+      {
+        "message": "FORWARD_SRNS_CONTEXT",
+        "value": 58
+      },
+      {
+        "message": "FORWARD_RELOCATION_COMPLETE_ACKNOWLEDGE",
+        "value": 59
+      },
+      {
+        "message": "FORWARD_SRNS_CONTEXT_ACKNOWLEDGE",
+        "value": 60
+      },
+      {
+        "message": "RAN_INFORMATION_RELAY",
+        "value": 70
+      },
+      {
+        "message": "MBMS_NOTIFICATION_REQUEST",
+        "value": 96
+      },
+      {
+        "message": "MBMS_NOTIFICATION_RESPONSE",
+        "value": 97
+      },
+      {
+        "message": "MBMS_NOTIFICATION_REJECT_REQUEST",
+        "value": 98
+      },
+      {
+        "message": "MBMS_NOTIFICATION_REJECT_RESPONSE",
+        "value": 99
+      },
+      {
+        "message": "CREATE_MBMS_CONTEXT_REQUEST",
+        "value": 100
+      },
+      {
+        "message": "CREATE_MBMS_CONTEXT_RESPONSE",
+        "value": 101
+      },
+      {
+        "message": "UPDATE_MBMS_CONTEXT_REQUEST",
+        "value": 102
+      },
+      {
+        "message": "UPDATE_MBMS_CONTEXT_RESPONSE",
+        "value": 103
+      },
+      {
+        "message": "DELETE_MBMS_CONTEXT_REQUEST",
+        "value": 104
+      },
+      {
+        "message": "DELETE_MBMS_CONTEXT_RESPONSE",
+        "value": 105
+      },
+      {
+        "message": "MBMS_REGISTRATION_REQUEST",
+        "value": 112
+      },
+      {
+        "message": "MBMS_REGISTRATION_RESPONSE",
+        "value": 113
+      },
+      {
+        "message": "MBMS_DEREGISTRATION_REQUEST",
+        "value": 114
+      },
+      {
+        "message": "MBMS_DEREGISTRATION_RESPONSE",
+        "value": 115
+      },
+      {
+        "message": "MBMS_SESSION_START_REQUEST",
+        "value": 116
+      },
+      {
+        "message": "MBMS_SESSION_START_RESPONSE",
+        "value": 117
+      },
+      {
+        "message": "MBMS_SESSION_STOP_REQUEST",
+        "value": 118
+      },
+      {
+        "message": "MBMS_SESSION_STOP_RESPONSE",
+        "value": 119
+      },
+      {
+        "message": "MBMS_SESSION_UPDATE_REQUEST",
+        "value": 120
+      },
+      {
+        "message": "MBMS_SESSION_UPDATE_RESPONSE",
+        "value": 121
+      },
+      {
+        "message": "MS_INFO_CHANGE_NOTIFICATION_REQUEST",
+        "value": 128
+      },
+      {
+        "message": "MS_INFO_CHANGE_NOTIFICATION_RESPONSE",
+        "value": 129
+      },
+      {
+        "message": "DATA_RECORD_TRANSFER_REQUEST",
+        "value": 240
+      },
+      {
+        "message": "DATA_RECORD_TRANSFER_RESPONSE",
+        "value": 241
+      },
+      {
+        "message": "END_MARKER",
+        "value": 254
+      },
+      {
+        "message": "G_PDU",
+        "value": 255
+      }
+    ]
+  },
+  "SM_CP": {
+    "protocol": "SGd/SMS",
+    "description": "SM CP 메시지 코드",
+    "entries": [
+      {
+        "message": "CP-DATA",
+        "value": 1
+      },
+      {
+        "message": "CP-ACK",
+        "value": 4
+      },
+      {
+        "message": "CP-ERROR",
+        "value": 16
+      }
+    ]
+  },
+  "SM_RP": {
+    "protocol": "SGd/SMS",
+    "description": "SM RP 메시지 코드",
+    "entries": [
+      {
+        "message": "UPLINK_RP-DATA",
+        "value": 0,
+        "direction": "MS to Network"
+      },
+      {
+        "message": "UPLINK_RP-ACK",
+        "value": 2,
+        "direction": "MS to Network"
+      },
+      {
+        "message": "UPLINK_RP-ERROR",
+        "value": 4,
+        "direction": "MS to Network"
+      },
+      {
+        "message": "UPLINK_RP-SMMA",
+        "value": 6,
+        "direction": "MS to Network"
+      },
+      {
+        "message": "DNLINK_RP-DATA",
+        "value": 1,
+        "direction": "Network to MS"
+      },
+      {
+        "message": "DNLINK_RP-ACK",
+        "value": 3,
+        "direction": "Network to MS"
+      },
+      {
+        "message": "DNLINK_RP-ERROR",
+        "value": 5,
+        "direction": "Network to MS"
+      }
+    ]
+  },
+  "SM_TP": {
+    "protocol": "SGd/SMS",
+    "description": "SM TP 메시지 코드",
+    "entries": [
+      {
+        "message": "SMS-DELIVER",
+        "value": 0,
+        "direction": "SC to MS"
+      },
+      {
+        "message": "SMS-DELIVER-REPORT",
+        "value": 8,
+        "direction": "MS to SC"
+      },
+      {
+        "message": "SMS-STATUS-REPORT",
+        "value": 2,
+        "direction": "SC to MS"
+      },
+      {
+        "message": "SMS-COMMAND",
+        "value": 10,
+        "direction": "MS to SC"
+      },
+      {
+        "message": "SMS-SUBMIT",
+        "value": 9,
+        "direction": "MS to SC"
+      },
+      {
+        "message": "SMS-SUBMIT-REPORT",
+        "value": 1,
+        "direction": "SC to MS"
+      }
+    ]
+  },
+  "SCTP": {
+    "protocol": "SCTP",
+    "description": "SCTP Chunk Type 코드",
+    "entries": [
+      {
+        "chunk_type": "Payload Data (DATA)",
+        "value": 0,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Initiation (INIT)",
+        "value": 1,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Initiation Acknowledgement (INIT ACK)",
+        "value": 2,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Selective Acknowledgement (SACK)",
+        "value": 3,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Heartbeat Request (HEARTBEAT)",
+        "value": 4,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Heartbeat Acknowledgement (HEARTBEAT ACK)",
+        "value": 5,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Abort (ABORT)",
+        "value": 6,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Shutdown (SHUTDOWN)",
+        "value": 7,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Shutdown Acknowledgement (SHUTDOWN ACK)",
+        "value": 8,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Operation Error (ERROR)",
+        "value": 9,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "State Cookie (COOKIE ECHO)",
+        "value": 10,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Cookie Acknowledgement (COOKIE ACK)",
+        "value": 11,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Reserved for Explicit Congestion Notification Echo (ECNE)",
+        "value": 12,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Reserved for Congestion Window Reduced (CWR)",
+        "value": 13,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Shutdown Complete (SHUTDOWN COMPLETE)",
+        "value": 14,
+        "reference": "[RFC4960]"
+      },
+      {
+        "chunk_type": "Authentication Chunk (AUTH)",
+        "value": 15,
+        "reference": "[RFC4895]"
+      },
+      {
+        "chunk_type": "Reserved for IETF-defined Chunk Extensions",
+        "value": 63,
+        "reference": null
+      },
+      {
+        "chunk_type": "Reserved for IETF-defined Chunk Extensions",
+        "value": 127,
+        "reference": null
+      },
+      {
+        "chunk_type": "Address Configuration Acknowledgment (ASCONF-ACK)",
+        "value": 128,
+        "reference": "[RFC5061]"
+      },
+      {
+        "chunk_type": "Unassigned",
+        "value": 129,
+        "reference": null
+      },
+      {
+        "chunk_type": "Re-configuration Chunk (RE-CONFIG)",
+        "value": 130,
+        "reference": "[RFC6525]"
+      },
+      {
+        "chunk_type": "Unassigned",
+        "value": 131,
+        "reference": null
+      },
+      {
+        "chunk_type": "Padding Chunk (PAD)",
+        "value": 132,
+        "reference": "[RFC4820]"
+      },
+      {
+        "chunk_type": "Reserved for IETF-defined Chunk Extensions",
+        "value": 191,
+        "reference": null
+      },
+      {
+        "chunk_type": "Forward TSN",
+        "value": 192,
+        "reference": "[RFC3758]"
+      },
+      {
+        "chunk_type": "Address Configuration Change Chunk (ASCONF)",
+        "value": 193,
+        "reference": "[RFC5061]"
+      },
+      {
+        "chunk_type": "Reserved for IETF-defined Chunk Extensions",
+        "value": 255,
+        "reference": "[RFC4960]"
+      }
+    ]
+  }
+}

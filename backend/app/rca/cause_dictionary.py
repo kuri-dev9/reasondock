@@ -52,6 +52,20 @@ CAUSE_DICTIONARY: dict[str, dict[str, dict[str, str]]] = {
             "safe_label": "NAS request reject 관련 실패",
         },
     },
+    "S1MME_NAS-ESM": {
+        "8": {
+            "semantic": "OPERATOR_DETERMINED_BARRING",
+            "description": "Operator determined barring",
+            "domain": "bearer_session",
+            "safe_label": "Operator determined barring",
+        },
+        "33": {
+            "semantic": "REQUESTED_SERVICE_OPTION_NOT_SUBSCRIBED",
+            "description": "Requested service option not subscribed",
+            "domain": "subscriber_service",
+            "safe_label": "Requested service option subscription 관련 실패",
+        },
+    },
     "S1MME_S1AP": {
         "900": {
             "semantic": "S1AP_MESSAGE_TIMEOUT",

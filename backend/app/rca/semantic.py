@@ -5,6 +5,7 @@ from typing import Any
 
 from app.rca.analyzer import CALL_TYPE, ERROR_INTERFACE
 from app.rca.cause_dictionary import resolve_cause
+from app.rca.knowledge_loader import lookup_cause, lookup_error_cause, lookup_message
 
 
 def _int(value: Any, default: int = 0) -> int:
@@ -32,6 +33,76 @@ def _event_time(record: dict[str, Any]) -> int:
     return _int(record.get("call_start_time"), -1)
 
 
+def _semantic_name(value: str) -> str:
+    return value.upper().replace(" ", "_").replace("-", "_").replace("/", "_")
+
+
+def _domain_from_interface(interface: str) -> str:
+    if "Diameter" in interface:
+        return "authentication"
+    if "GTP" in interface:
+        return "bearer_session"
+    if "NAS-EMM" in interface or "NAS_EMM" in interface:
+        return "mobility_management"
+    if "NAS-ESM" in interface or "NAS_ESM" in interface:
+        return "subscriber_service"
+    if "S1AP" in interface:
+        return "radio_access"
+    return "unknown"
+
+
+def _enrich_cause(interface: str, message: Any, cause_code: Any) -> dict[str, Any]:
+    cause = resolve_cause(interface, message, cause_code)
+    xdr_meta = lookup_error_cause(interface, cause_code)
+    if xdr_meta:
+        meaning = str(xdr_meta.get("meaning") or xdr_meta.get("name") or xdr_meta.get("message_type") or cause["semantic"])
+        cause.update(
+            {
+                "semantic": _semantic_name(meaning),
+                "description": str(xdr_meta.get("description") or meaning),
+                "domain": _domain_from_interface(interface),
+                "safe_label": meaning,
+                "known": True,
+                "dictionary_match": xdr_meta.get("dictionary_section"),
+            }
+        )
+        if xdr_meta.get("group"):
+            cause["group"] = xdr_meta["group"]
+        return cause
+
+    release_meta = lookup_cause(interface, cause_code)
+    if release_meta:
+        cause.update(
+            {
+                "semantic": str(release_meta.get("name") or cause["semantic"]),
+                "description": str(release_meta.get("description") or cause["description"]),
+                "domain": str(release_meta.get("domain") or cause["domain"]),
+                "safe_label": str(release_meta.get("name") or cause["safe_label"]),
+                "known": True,
+                "dictionary_match": release_meta.get("id"),
+            }
+        )
+    return cause
+
+
+def _enrich_message(interface: str, message: Any) -> dict[str, Any]:
+    meta = lookup_message(interface, message)
+    if not meta:
+        return {"code": str(message or "0"), "name": None, "dictionary_match": None}
+    name = (
+        meta.get("name")
+        or meta.get("message")
+        or meta.get("procedure")
+        or meta.get("meaning")
+    )
+    return {
+        "code": str(message or "0"),
+        "name": name,
+        "abbreviation": meta.get("abbreviation"),
+        "dictionary_match": meta.get("dictionary_section"),
+    }
+
+
 def enrich_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
     for index, record in enumerate(records):
@@ -41,7 +112,7 @@ def enrich_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         interface = ERROR_INTERFACE.get(interface_code, f"INTERFACE_{interface_code}")
         message = str(record.get("first_error_message") or "0")
         cause_code = str(record.get("first_error_cause") or "0")
-        cause = resolve_cause(interface, message, cause_code)
+        cause = _enrich_cause(interface, message, cause_code)
         events.append(
             {
                 "record_index": index,
@@ -50,6 +121,7 @@ def enrich_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "interface": interface,
                 "interface_code": interface_code,
                 "message": message,
+                "message_info": _enrich_message(interface, message),
                 "cause": cause,
                 "equipment": {
                     "mme": str(record.get("MME_ID") or "(empty)"),

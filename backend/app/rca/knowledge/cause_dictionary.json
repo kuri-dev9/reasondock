@@ -1,0 +1,3609 @@
+{
+  "S1AP": {
+    "protocol": "S1AP",
+    "ie": "Cause",
+    "entries": [
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 100,
+        "meaning": "Unspecified",
+        "description": "Sent for radio network layer cause when none of the specified cause values applies"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 101,
+        "meaning": "TX2RELOCOverall Expiry",
+        "description": "The timer guarding the handover that takes place over X2 has abnormally expired."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 102,
+        "meaning": "Successful Handover",
+        "description": "Successful handover."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 103,
+        "meaning": "Release due to E-UTRAN Generated Reason",
+        "description": "Release is initiated due to E-UTRAN generated reason."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 104,
+        "meaning": "Handover Cancelled",
+        "description": "The reason for the action is cancellation of Handover"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 105,
+        "meaning": "Partial Handover",
+        "description": "Provides a reason for the handover cancellation. The HANDOVER COMMAND message from MME contained ERABs to Release List IE and the source eNB estimated service continuity for the UE would be better by not proceeding with handover towards this particular target eNB."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 106,
+        "meaning": "Handover Failure In Target EPC/eNB Or Target System",
+        "description": "The handover failed due to a failure in target EPC/eNB or target system."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 107,
+        "meaning": "Handover Target not allowed",
+        "description": "Handover to the indicated target cell is not allowed for the UE in question."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 108,
+        "meaning": "TS1RELOCoverall Expiry",
+        "description": "The reason for the action is expiry of timer TS1RELOCoverall."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 109,
+        "meaning": "TS1RELOCprep Expiry",
+        "description": "Handover Preparation procedure is cancelled when timer TS1RELOCprep expires."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 110,
+        "meaning": "Cell not available",
+        "description": "The concerned cell is not available."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 111,
+        "meaning": "Unknown Target ID",
+        "description": "Handover rejected because the target ID is not known to the EPC."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 112,
+        "meaning": "No Radio Resources Available in Target Cell,",
+        "description": "Load on target cell is too high."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 113,
+        "meaning": "Unknown or already allocated MME UE S1AP ID",
+        "description": "The action failed because the MME UE S1AP ID is either unknown, or (for a first message received at the eNB) is known and already allocated to an existing context."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 114,
+        "meaning": "Unknown or already allocated eNB UE S1AP ID",
+        "description": "The action failed because the eNB UE S1AP ID is either unknown, or (for a first message received at the MME) is known and already allocated to an existing context."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 115,
+        "meaning": "Unknown or inconsistent pair of UE S1AP ID",
+        "description": "The action failed because both UE S1AP IDs are unknown, or are known but do not define a single UE context."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 116,
+        "meaning": "Handover desirable for radio reasons",
+        "description": "The reason for requesting handover is radio related."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 117,
+        "meaning": "Time critical handover",
+        "description": "handover is requested for time critical reason i.e., this cause value is reserved to represent all critical cases where the connection is likely to be dropped if handover is not performed."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 118,
+        "meaning": "Resource optimisation handover",
+        "description": "The reason for requesting handover is to improve the load distribution with the neighbour cells."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 119,
+        "meaning": "Reduce load in serving cell",
+        "description": "Load on serving cell needs to be reduced."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 120,
+        "meaning": "User inactivity",
+        "description": "The action is requested due to user inactivity on all E-RABs, e.g., S1 is requested to be released in order to optimise the radio resources."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 121,
+        "meaning": "Radio Connection With UE Lost",
+        "description": "The action is requested due to loosing the radio connection to the UE."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 122,
+        "meaning": "Load Balancing TAU Required",
+        "description": "The action is requested for all load balancing and offload cases in the MME."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 123,
+        "meaning": "CS Fallback Triggered",
+        "description": "The action is due to a CS fallback that has been triggered.  When it is included in UE CONTEXT RELEASE REQUEST message, it indicates the PS service suspension is not required in the EPC."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 124,
+        "meaning": "UE Not Available for PS Service",
+        "description": "The action is requested due to a CS fallback to GERAN that has been triggered.  When it is included in the UE CONTEXT RELEASE REQUEST message, it indicates that the PS service suspension is required in the EPC due to the target GERAN cell or the UE has no DTM capability."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 125,
+        "meaning": "Radio resources not available",
+        "description": "No requested radio resources are available"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 126,
+        "meaning": "Failure in the Radio Interface Procedure",
+        "description": "Radio interface procedure has failed"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 127,
+        "meaning": "Invalid QoS combination",
+        "description": "The action was failed because of invalid QoS combination."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 128,
+        "meaning": "Inter-RAT Redirection",
+        "description": "The release is requested due to inter-RAT redirection. When it is included in UE CONTEXT RELEASE REQUEST message, it indicates the PS service suspension is not required in the EPC ."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 129,
+        "meaning": "Interaction with other procedure",
+        "description": "The action is due to an ongoing interaction with another procedure"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 130,
+        "meaning": "Unknown E-RAB ID",
+        "description": "The action failed because the E-RAB ID is unknown in the eNB"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 131,
+        "meaning": "Multiple E-RAB ID Instances",
+        "description": "The action failed because multiple instance of the same ERAB had been provided to the eNB"
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 132,
+        "meaning": "Encryption and/or integrity protection algorithms not supported",
+        "description": "The eNB is unable to support any of the encryption and/or integrity protection algorithms supported by the UE."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 133,
+        "meaning": "S1 Intra system Handover triggered",
+        "description": "The action is due to a S1 intra system handover that has been triggered."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 134,
+        "meaning": "S1 Inter system Handover triggered",
+        "description": "The action is due to a S1 inter system handover that has been triggered."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 135,
+        "meaning": "X2 Handover triggered",
+        "description": "The action is due to an X2 handover that has been triggered."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 136,
+        "meaning": "Redirection towards 1xRTT",
+        "description": "The release of the UE-associated logical S1 connection is requested due to redirection towards a 1xRTT system e.g., CS fallback to 1xRTT, or SRVCC to 1xRTT, when the PS service suspension is required in the EPC. During this procedure, the radio interface message might but need not include redirection information."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 137,
+        "meaning": "Not supported QCI Value",
+        "description": "The E-RAB setup failed because the requested QCI is not supported."
+      },
+      {
+        "group": "Radio Network Layer Cause",
+        "value": 138,
+        "meaning": "Invalid CSG Id",
+        "description": "The CSG ID provided to the target eNB was found invalid."
+      },
+      {
+        "group": "Transport Layer Cause",
+        "value": 200,
+        "meaning": "Transport Resource Unavailable",
+        "description": "The required transport resources are not available"
+      },
+      {
+        "group": "Transport Layer Cause",
+        "value": 201,
+        "meaning": "Unspecified",
+        "description": "Sent when none of the above cause values applies but still the cause is Transport Network Layer related"
+      },
+      {
+        "group": "NAS Cause",
+        "value": 300,
+        "meaning": "Normal Release",
+        "description": "The release is normal"
+      },
+      {
+        "group": "NAS Cause",
+        "value": 301,
+        "meaning": "Authentication Failure",
+        "description": "The action is due to authentication failure."
+      },
+      {
+        "group": "NAS Cause",
+        "value": 302,
+        "meaning": "Detach",
+        "description": "The action is due to detach."
+      },
+      {
+        "group": "NAS Cause",
+        "value": 303,
+        "meaning": "Unspecified",
+        "description": "Sent when none of the above cause values applies but still the cause is NAS related"
+      },
+      {
+        "group": "NAS Cause",
+        "value": 304,
+        "meaning": "CSG Subscription Expiry",
+        "description": "The action is due to the UE becoming a non-member of the currently used CSG."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 400,
+        "meaning": "Transfer Syntax Error",
+        "description": "The received message included a transfer syntax error."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 401,
+        "meaning": "Abstract Syntax Error(Reject)",
+        "description": "The received message included an abstract syntax error and the concerning criticality indicated “reject”."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 402,
+        "meaning": "Abstract Syntax Error(Ignore And Notify)",
+        "description": "The received message included an abstract syntax error and the concerning criticality indicated “ignore and notify”."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 403,
+        "meaning": "Message Not Compatible With Receiver State",
+        "description": "The received message was not compatible with the receiver state."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 404,
+        "meaning": "Semantic Error",
+        "description": "The received message included a semantic error."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 405,
+        "meaning": "Abstract Syntax Error(Falsely Constructed Message)",
+        "description": "The received message contained IEs or IE groups in wrong order or with too many occurrences."
+      },
+      {
+        "group": "Protocol Cause",
+        "value": 406,
+        "meaning": "Unspecified",
+        "description": "Sent when none of the above cause values applies but still the cause is Protocol related"
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 500,
+        "meaning": "Control Processing Overload",
+        "description": "Control processing overload"
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 501,
+        "meaning": "Not Enough User Plane Processing Resources Available",
+        "description": "No enough resources are available related to user plane processing."
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 502,
+        "meaning": "Hardware Failure",
+        "description": "Action related to hardware failure"
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 503,
+        "meaning": "O&M Intervention",
+        "description": "The action is due to O&M intervention."
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 504,
+        "meaning": "Unspecified Failure",
+        "description": "Sent when none of the above cause values applies and the cause is not related to any of the categories Radio Network Layer, Transport Network Layer, NAS or Protocol."
+      },
+      {
+        "group": "Miscellaneous Cause",
+        "value": 505,
+        "meaning": "Unknown PLMN",
+        "description": "The MME does not identify any PLMN provided by the eNB"
+      }
+    ]
+  },
+  "NAS_EMM": {
+    "protocol": "NAS-EMM",
+    "ie": "EMM Cause",
+    "entries": [
+      {
+        "value": 2,
+        "meaning": "IMSI unknown in HSS"
+      },
+      {
+        "value": 3,
+        "meaning": "Illegal UE"
+      },
+      {
+        "value": 5,
+        "meaning": "IMEI not accepted"
+      },
+      {
+        "value": 6,
+        "meaning": "Illegal ME"
+      },
+      {
+        "value": 7,
+        "meaning": "EPS services not allowed"
+      },
+      {
+        "value": 8,
+        "meaning": "EPS services and non-EPS services not allowed"
+      },
+      {
+        "value": 9,
+        "meaning": "UE identity cannot be derived by the network"
+      },
+      {
+        "value": 10,
+        "meaning": "Implicitly detached"
+      },
+      {
+        "value": 11,
+        "meaning": "PLMN not allowed"
+      },
+      {
+        "value": 12,
+        "meaning": "Tracking Area not allowed"
+      },
+      {
+        "value": 13,
+        "meaning": "Roaming not allowed in this tracking area"
+      },
+      {
+        "value": 14,
+        "meaning": "EPS services not allowed in this PLMN"
+      },
+      {
+        "value": 15,
+        "meaning": "No Suitable Cells In tracking area"
+      },
+      {
+        "value": 16,
+        "meaning": "MSC temporarily not reachable"
+      },
+      {
+        "value": 17,
+        "meaning": "Network failure"
+      },
+      {
+        "value": 18,
+        "meaning": "CS domain not available"
+      },
+      {
+        "value": 19,
+        "meaning": "ESM failure"
+      },
+      {
+        "value": 20,
+        "meaning": "MAC failure"
+      },
+      {
+        "value": 21,
+        "meaning": "Synch failure"
+      },
+      {
+        "value": 22,
+        "meaning": "Congestion"
+      },
+      {
+        "value": 23,
+        "meaning": "UE security capabilities mismatch"
+      },
+      {
+        "value": 24,
+        "meaning": "Security mode rejected, unspecified"
+      },
+      {
+        "value": 25,
+        "meaning": "Not authorized for this CSG"
+      },
+      {
+        "value": 26,
+        "meaning": "Non-EPS authentication unacceptable"
+      },
+      {
+        "value": 35,
+        "meaning": "Requested service option not authorized"
+      },
+      {
+        "value": 38,
+        "meaning": "CS fallback call establishment not allowed"
+      },
+      {
+        "value": 39,
+        "meaning": "CS service temporarily not available"
+      },
+      {
+        "value": 40,
+        "meaning": "No EPS bearer context activated"
+      },
+      {
+        "value": 95,
+        "meaning": "Semantically incorrect message"
+      },
+      {
+        "value": 96,
+        "meaning": "Invalid mandatory information"
+      },
+      {
+        "value": 97,
+        "meaning": "Message type non-existent or not implemented"
+      },
+      {
+        "value": 98,
+        "meaning": "Message type not compatible with the protocol state"
+      },
+      {
+        "value": 99,
+        "meaning": "Information element non-existent or not implemented"
+      },
+      {
+        "value": 100,
+        "meaning": "Conditional IE error"
+      },
+      {
+        "value": 101,
+        "meaning": "Message not compatible with the protocol state"
+      },
+      {
+        "value": 111,
+        "meaning": "Protocol error, unspecified"
+      },
+      {
+        "value": 250,
+        "meaning": "AUTHENTICATION REJECT, User-Defined Cause"
+      }
+    ]
+  },
+  "NAS_ESM": {
+    "protocol": "NAS-ESM",
+    "ie": "ESM Cause",
+    "entries": [
+      {
+        "value": 8,
+        "meaning": "Operator Determined Barring"
+      },
+      {
+        "value": 26,
+        "meaning": "Insufficient resources"
+      },
+      {
+        "value": 27,
+        "meaning": "Unknown or missing APN"
+      },
+      {
+        "value": 28,
+        "meaning": "Unknown PDN type"
+      },
+      {
+        "value": 29,
+        "meaning": "User authentication failed"
+      },
+      {
+        "value": 30,
+        "meaning": "Request rejected by Serving GW or PDN GW"
+      },
+      {
+        "value": 31,
+        "meaning": "Request rejected, unspecified"
+      },
+      {
+        "value": 32,
+        "meaning": "Service option not supported"
+      },
+      {
+        "value": 33,
+        "meaning": "Requested service option not subscribed"
+      },
+      {
+        "value": 34,
+        "meaning": "Service option temporarily out of order"
+      },
+      {
+        "value": 35,
+        "meaning": "PTI already in use"
+      },
+      {
+        "value": 36,
+        "meaning": "Regular deactivation"
+      },
+      {
+        "value": 37,
+        "meaning": "EPS QoS not accepted"
+      },
+      {
+        "value": 38,
+        "meaning": "Network failure"
+      },
+      {
+        "value": 39,
+        "meaning": "Reactivation requested"
+      },
+      {
+        "value": 41,
+        "meaning": "Semantic error in the TFT operation"
+      },
+      {
+        "value": 42,
+        "meaning": "Syntactical error in the TFT operation"
+      },
+      {
+        "value": 43,
+        "meaning": "Invalid EPS bearer identity"
+      },
+      {
+        "value": 44,
+        "meaning": "Semantic errors in packet filter(s)"
+      },
+      {
+        "value": 45,
+        "meaning": "Syntactical errors in packet filter(s)"
+      },
+      {
+        "value": 46,
+        "meaning": "EPS bearer context without TFT already activated"
+      },
+      {
+        "value": 47,
+        "meaning": "PTI mismatch"
+      },
+      {
+        "value": 49,
+        "meaning": "Last PDN disconnection not allowed"
+      },
+      {
+        "value": 50,
+        "meaning": "PDN type IPv4 only allowed"
+      },
+      {
+        "value": 51,
+        "meaning": "PDN type IPv6 only allowed"
+      },
+      {
+        "value": 52,
+        "meaning": "Single address bearers only allowed"
+      },
+      {
+        "value": 53,
+        "meaning": "ESM information not received"
+      },
+      {
+        "value": 54,
+        "meaning": "PDN connection does not exist"
+      },
+      {
+        "value": 55,
+        "meaning": "Multiple PDN connections for a given APN not allowed"
+      },
+      {
+        "value": 56,
+        "meaning": "Collision with network initiated request"
+      },
+      {
+        "value": 59,
+        "meaning": "Unsupported QCI value"
+      },
+      {
+        "value": 60,
+        "meaning": "Bearer handling not supported"
+      },
+      {
+        "value": 81,
+        "meaning": "Invalid PTI value"
+      },
+      {
+        "value": 95,
+        "meaning": "Semantically incorrect message"
+      },
+      {
+        "value": 96,
+        "meaning": "Invalid mandatory information"
+      },
+      {
+        "value": 97,
+        "meaning": "Message type non-existent or not implemented"
+      },
+      {
+        "value": 98,
+        "meaning": "Message type not compatible with the protocol state"
+      },
+      {
+        "value": 99,
+        "meaning": "Information element non-existent or not implemented"
+      },
+      {
+        "value": 100,
+        "meaning": "Conditional IE error"
+      },
+      {
+        "value": 101,
+        "meaning": "Message not compatible with the protocol state"
+      },
+      {
+        "value": 111,
+        "meaning": "Protocol error, unspecified"
+      },
+      {
+        "value": 112,
+        "meaning": "APN restriction value incompatible with active EPS bearer context"
+      }
+    ]
+  },
+  "Diameter_ResultCode": {
+    "protocol": "Diameter",
+    "avp": "Result-Code",
+    "entries": [
+      {
+        "avp": "Result-Code",
+        "category": "Informational",
+        "prefix_code": null,
+        "value": 1000,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Informational",
+        "prefix_code": null,
+        "value": 1001,
+        "meaning": "DIAMETER_MULTI_ROUND_AUTH"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2000,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2001,
+        "meaning": "DIAMETER_SUCCESS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2002,
+        "meaning": "DIAMETER_LIMITED_SUCCESS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2003,
+        "meaning": "DIAMETER_FIRST_REGISTRATION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2004,
+        "meaning": "DIAMETER_SUBSEQUENT_REGISTRATION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2005,
+        "meaning": "DIAMETER_UNREGISTERED_SERVICE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2006,
+        "meaning": "DIAMETER_SUCCESS_SERVER_NAME_NOT_STORED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2007,
+        "meaning": "DIAMETER_SERVER_SELECTION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2008,
+        "meaning": "DIAMETER_SUCCESS_AUTH_SENT_SERVER_NOT_STORED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Success",
+        "prefix_code": null,
+        "value": 2009,
+        "meaning": "DIAMETER_SUCCESS_RELOCATE_HA"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3000,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3001,
+        "meaning": "DIAMETER_COMMAND_UNSUPPORTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3002,
+        "meaning": "DIAMETER_UNABLE_TO_DELIVER"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3003,
+        "meaning": "DIAMETER_REALM_NOT_SERVED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3004,
+        "meaning": "DIAMETER_TOO_BUSY"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3005,
+        "meaning": "DIAMETER_LOOP_DETECTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3006,
+        "meaning": "DIAMETER_REDIRECT_INDICATION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3007,
+        "meaning": "DIAMETER_APPLICATION_UNSUPPORTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3008,
+        "meaning": "DIAMETER_INVALID_HDR_BITS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3009,
+        "meaning": "DIAMETER_INVALID_AVP_BITS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3010,
+        "meaning": "DIAMETER_UNKNOWN_PEER"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Protocol Errors",
+        "prefix_code": null,
+        "value": 3011,
+        "meaning": "DIAMETER_REALM_REDIRECT_INDICATION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4000,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4001,
+        "meaning": "DIAMETER_AUTHENTICATION_REJECTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4002,
+        "meaning": "DIAMETER_OUT_OF_SPACE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4003,
+        "meaning": "ELECTION_LOST"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4004,
+        "meaning": "Unassigned"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4005,
+        "meaning": "DIAMETER_ERROR_MIP_REPLY_FAILURE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4006,
+        "meaning": "DIAMETER_ERROR_HA_NOT_AVAILABLE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4007,
+        "meaning": "DIAMETER_ERROR_BAD_KEY"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4008,
+        "meaning": "DIAMETER_ERROR_MIP_FILTER_NOT_SUPPORTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4009,
+        "meaning": "Unassigned"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4010,
+        "meaning": "DIAMETER_END_USER_SERVICE_DENIED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4011,
+        "meaning": "DIAMETER_CREDIT_CONTROL_NOT_APPLICABLE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4012,
+        "meaning": "DIAMETER_CREDIT_LIMIT_REACHED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4013,
+        "meaning": "DIAMETER_USER_NAME_REQUIRED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": null,
+        "value": 4014,
+        "meaning": "RESOURCE_FAILURE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5000,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5001,
+        "meaning": "DIAMETER_AVP_UNSUPPORTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5002,
+        "meaning": "DIAMETER_UNKNOWN_SESSION_ID"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5003,
+        "meaning": "DIAMETER_AUTHORIZATION_REJECTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5004,
+        "meaning": "DIAMETER_INVALID_AVP_VALUE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5005,
+        "meaning": "DIAMETER_MISSING_AVP"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5006,
+        "meaning": "DIAMETER_RESOURCES_EXCEEDED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5007,
+        "meaning": "DIAMETER_CONTRADICTING_AVPS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5008,
+        "meaning": "DIAMETER_AVP_NOT_ALLOWED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5009,
+        "meaning": "DIAMETER_AVP_OCCURS_TOO_MANY_TIMES"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5010,
+        "meaning": "DIAMETER_NO_COMMON_APPLICATION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5011,
+        "meaning": "DIAMETER_UNSUPPORTED_VERSION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5012,
+        "meaning": "DIAMETER_UNABLE_TO_COMPLY"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5013,
+        "meaning": "DIAMETER_INVALID_BIT_IN_HEADER"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5014,
+        "meaning": "DIAMETER_INVALID_AVP_LENGTH"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5015,
+        "meaning": "DIAMETER_INVALID_MESSAGE_LENGTH"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5016,
+        "meaning": "DIAMETER_INVALID_AVP_BIT_COMBO"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5017,
+        "meaning": "DIAMETER_NO_COMMON_SECURITY"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5018,
+        "meaning": "DIAMETER_RADIUS_AVP_UNTRANSLATABLE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5024,
+        "meaning": "DIAMETER_ERROR_NO_FOREIGN_HA_SERVICE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5025,
+        "meaning": "DIAMETER_ERROR_END_TO_END_MIP_KEY_ENCRYPTION"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5030,
+        "meaning": "DIAMETER_USER_UNKNOWN"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5031,
+        "meaning": "DIAMETER_RATING_FAILED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5032,
+        "meaning": "DIAMETER_ERROR_USER_UNKNOWN"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5033,
+        "meaning": "DIAMETER_ERROR_IDENTITIES_DONT_MATCH"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5034,
+        "meaning": "DIAMETER_ERROR_IDENTITY_NOT_REGISTERED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5035,
+        "meaning": "DIAMETER_ERROR_ROAMING_NOT_ALLOWED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5036,
+        "meaning": "DIAMETER_ERROR_IDENTITY_ALREADY_REGISTERED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5037,
+        "meaning": "DIAMETER_ERROR_AUTH_SCHEME_NOT_SUPPORTED"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5038,
+        "meaning": "DIAMETER_ERROR_IN_ASSIGNMENT_TYPE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5039,
+        "meaning": "DIAMETER_ERROR_TOO_MUCH_DATA"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5040,
+        "meaning": "DIAMETER_ERROR_NOT SUPPORTED_USER_DATA"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5041,
+        "meaning": "DIAMETER_ERROR_MIP6_AUTH_MODE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5042,
+        "meaning": "UNKNOWN_BINDING_TEMPLATE_NAME"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5043,
+        "meaning": "BINDING_FAILURE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5044,
+        "meaning": "MAX_BINDINGS_SET_FAILURE"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5045,
+        "meaning": "MAXIMUM_BINDINGS_REACHED_FOR_ENDPOINT"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5046,
+        "meaning": "SESSION_EXISTS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5047,
+        "meaning": "INSUFFICIENT_CLASSIFIERS"
+      },
+      {
+        "avp": "Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": null,
+        "value": 5048,
+        "meaning": "DIAMETER_ERROR_EAP_CODE_UNKNOWN"
+      },
+      {
+        "avp": "Disconnect-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 0,
+        "meaning": "REBOOTING"
+      },
+      {
+        "avp": "Disconnect-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 1,
+        "meaning": "BUSY"
+      },
+      {
+        "avp": "Disconnect-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 2,
+        "meaning": "DO_NOT_WANT_TO_TALK_TO_YOU"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 0,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 1,
+        "meaning": "DIAMETER_LOGOUT"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 2,
+        "meaning": "DIAMETER_SERVICE_NOT_PROVIDED"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 3,
+        "meaning": "DIAMETER_BAD_ANSWER"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 4,
+        "meaning": "DIAMETER_ADMINISTRATIVE"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5,
+        "meaning": "DIAMETER_LINK_BROKEN"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 6,
+        "meaning": "DIAMETER_AUTH_EXPIRED"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 7,
+        "meaning": "DIAMETER_USER_MOVED"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 8,
+        "meaning": "DIAMETER_SESSION_TIMEOUT"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 11,
+        "meaning": "User Request"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 12,
+        "meaning": "Lost Carrier"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 13,
+        "meaning": "Lost Service"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 14,
+        "meaning": "Idle Timeout"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 15,
+        "meaning": "Session Timeout"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 16,
+        "meaning": "Admin Reset"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 17,
+        "meaning": "Admin Reboot"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 18,
+        "meaning": "Port Error"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 19,
+        "meaning": "NAS Error"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 20,
+        "meaning": "NAS Request"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 21,
+        "meaning": "NAS Reboot"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 22,
+        "meaning": "Port Unneeded"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 23,
+        "meaning": "Port Preempted"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 24,
+        "meaning": "Port Suspended"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 25,
+        "meaning": "Service Unavailable"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 26,
+        "meaning": "Callback"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 27,
+        "meaning": "User Error"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 28,
+        "meaning": "Host Request"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 29,
+        "meaning": "Supplicant Restart"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 30,
+        "meaning": "Reauthentication Failure"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 31,
+        "meaning": "Port Reinitialized"
+      },
+      {
+        "avp": "Termination-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 32,
+        "meaning": "Port Administratively Disabled"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 0,
+        "meaning": "MEMORY_CAPACITY_EXCEEDED"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 1,
+        "meaning": "EQUIPMENT_PROTOCOL_ERROR"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 2,
+        "meaning": "EQUIPMENT_NOT_SM_EQUIPPED"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 3,
+        "meaning": "UNKNOWN_SERVICE_CENTRE"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 4,
+        "meaning": "SC_CONGESTION"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5,
+        "meaning": "INVALID_SME_ADDRESS"
+      },
+      {
+        "avp": "SM-Enumerated-Delivery-Failure-Cause",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 6,
+        "meaning": "USER_NOT_SC_USER"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 0,
+        "meaning": "no paging response via the MSC"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 1,
+        "meaning": "IMSI detached"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 2,
+        "meaning": "roaming restriction"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 3,
+        "meaning": "deregistered in the HLR for non GPRS"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 4,
+        "meaning": "MS purged for non GPRS"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5,
+        "meaning": "no paging response via the SGSN"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 6,
+        "meaning": "GPRS detached"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 7,
+        "meaning": "deregistered in the HLR for GPRS"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 8,
+        "meaning": "MS purged for GPRS"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 9,
+        "meaning": "Unidentified subscriber via the MSC"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 10,
+        "meaning": "Unidentified subscriber via the SGSN"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 11,
+        "meaning": "deregistered in the HSS/HLR for IMS"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 12,
+        "meaning": "no response via the IP-SM-GW"
+      },
+      {
+        "avp": "Absent-User-Diagnostic-SM",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 13,
+        "meaning": "the MS is temporarily unavailable"
+      }
+    ]
+  },
+  "Diameter_ExperimentalResultCode": {
+    "protocol": "Diameter",
+    "avp": "Experimental-Result-Code",
+    "entries": [
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2001,
+        "meaning": "DIAMETER_FIRST_REGISTRATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2002,
+        "meaning": "DIAMETER_SUBSEQUENT_REGISTRATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2003,
+        "meaning": "DIAMETER_UNREGISTERED_SERVICE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2004,
+        "meaning": "DIAMETER_SUCCESS_SERVER_NAME_NOT_STORED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2005,
+        "meaning": "Deprecated value"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Success",
+        "prefix_code": "1",
+        "value": 2021,
+        "meaning": "DIAMETER_PDP_CONTEXT_DELETION_INDICATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4100,
+        "meaning": "DIAMETER_USER_DATA_NOT_AVAILABLE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4101,
+        "meaning": "DIAMETER_PRIOR_UPDATE_IN_PROGRESS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4121,
+        "meaning": "DIAMETER_ERROR_OUT_OF_RESOURCES"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4141,
+        "meaning": "DIAMETER_PCC_BEARER_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4142,
+        "meaning": "DIAMETER_BEARER_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4143,
+        "meaning": "DIAMETER_AN_GW_FAILED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4144,
+        "meaning": "DIAMETER_PENDING_TRANSACTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4181,
+        "meaning": "DIAMETER_AUTHENTICATION_DATA_UNAVAILABLE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4182,
+        "meaning": "DIAMETER_ERROR_CAMEL_SUBSCRIPTION_PRESENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4201,
+        "meaning": "DIAMETER_ERROR_ABSENT_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4221,
+        "meaning": "DIAMETER_ERROR_UNREACHABLE_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4222,
+        "meaning": "DIAMETER_ERROR_SUSPENDED_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4223,
+        "meaning": "DIAMETER_ERROR_DETACHED_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4224,
+        "meaning": "DIAMETER_ERROR_POSITIONING_DENIED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4225,
+        "meaning": "DIAMETER_ERROR_POSITIONING_FAILED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4226,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_UNREACHABLE_LCS_CLIENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Transient Failures",
+        "prefix_code": "1",
+        "value": 4241,
+        "meaning": "DIAMETER_ERROR_NO_AVAILABLE_POLICY_COUNTERS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5001,
+        "meaning": "DIAMETER_ERROR_USER_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5002,
+        "meaning": "DIAMETER_ERROR_IDENTITIES_DONT_MATCH"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5003,
+        "meaning": "DIAMETER_ERROR_IDENTITY_NOT_REGISTERED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5004,
+        "meaning": "DIAMETER_ERROR_ROAMING_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5005,
+        "meaning": "DIAMETER_ERROR_IDENTITY_ALREADY_REGISTERED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5006,
+        "meaning": "DIAMETER_ERROR_AUTH_SCHEME_NOT_SUPPORTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5007,
+        "meaning": "DIAMETER_ERROR_IN_ASSIGNMENT_TYPE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5008,
+        "meaning": "DIAMETER_ERROR_TOO_MUCH_DATA"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5009,
+        "meaning": "DIAMETER_ERROR_NOT_SUPPORTED_USER_DATA"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5010,
+        "meaning": "Unassigned"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5011,
+        "meaning": "DIAMETER_ERROR_FEATURE_UNSUPPORTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5012,
+        "meaning": "DIAMETER_ERROR_SERVING_NODE_FEATURE_UNSUPPORTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5041,
+        "meaning": "DIAMETER_ERROR_USER_NO_WLAN_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5042,
+        "meaning": "DIAMETER_ERROR_W-APN_UNUSED_BY_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5043,
+        "meaning": "DIAMETER_ERROR_NO_ACCESS_INDEPENDENT_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5044,
+        "meaning": "DIAMETER_ERROR_USER_NO_W-APN_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5045,
+        "meaning": "DIAMETER_ERROR_UNSUITABLE_NETWORK"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5061,
+        "meaning": "INVALID_SERVICE_INFORMATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5062,
+        "meaning": "FILTER_RESTRICTIONS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5063,
+        "meaning": "REQUESTED_SERVICE_NOT_AUTHORIZED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5064,
+        "meaning": "DUPLICATED_AF_SESSION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5065,
+        "meaning": "IP-CAN_SESSION_NOT_AVAILABLE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5066,
+        "meaning": "UNAUTHORIZED_NON_EMERGENCY_SESSION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5067,
+        "meaning": "UNAUTHORIZED_SPONSORED_DATA_CONNECTIVITY"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5068,
+        "meaning": "TEMPORARY_NETWORK_FAILURE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5100,
+        "meaning": "DIAMETER_ERROR_USER_DATA_NOT_RECOGNIZED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5101,
+        "meaning": "DIAMETER_ERROR_OPERATION_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5102,
+        "meaning": "DIAMETER_ERROR_USER_DATA_CANNOT_BE_READ"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5103,
+        "meaning": "DIAMETER_ERROR_USER_DATA_CANNOT_BE_MODIFIED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5104,
+        "meaning": "DIAMETER_ERROR_USER_DATA_CANNOT_BE_NOTIFIED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5105,
+        "meaning": "DIAMETER_ERROR_TRANSPARENT_DATA_OUT_OF_SYNC"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5106,
+        "meaning": "DIAMETER_ERROR_SUBS_DATA_ABSENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5107,
+        "meaning": "DIAMETER_ERROR_NO_SUBSCRIPTION_TO_DATA"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5108,
+        "meaning": "DIAMETER_ERROR_DSAI_NOT_AVAILABLE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5120,
+        "meaning": "DIAMETER_ERROR_START_INDICATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5121,
+        "meaning": "DIAMETER_ERROR_STOP_INDICATION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5122,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_MBMS_BEARER_SERVICE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5123,
+        "meaning": "DIAMETER_ERROR_SERVICE_AREA"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5140,
+        "meaning": "DIAMETER_ERROR_INITIAL_PARAMETERS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5141,
+        "meaning": "DIAMETER_ERROR_TRIGGER_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5142,
+        "meaning": "DIAMETER_PCC_RULE_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5143,
+        "meaning": "DIAMETER_ERROR_BEARER_NOT_AUTHORIZED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5144,
+        "meaning": "DIAMETER_ERROR_TRAFFIC_MAPPING_INFO_REJECTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5145,
+        "meaning": "DIAMETER_QOS_RULE_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5146,
+        "meaning": "Reserved"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5147,
+        "meaning": "DIAMETER_ERROR_CONFLICTING_REQUEST"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5148,
+        "meaning": "DIAMETER_ADC_RULE_EVENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5401,
+        "meaning": "DIAMETER_ERROR_IMPI_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5402,
+        "meaning": "DIAMETER_ERROR_NOT_AUTHORIZED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5403,
+        "meaning": "DIAMETER_ERROR_TRANSACTION_IDENTIFIER_INVALID"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5420,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_EPS_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5421,
+        "meaning": "DIAMETER_ERROR_RAT_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5422,
+        "meaning": "DIAMETER_ERROR_EQUIPMENT_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5423,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_SERVING_NODE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5450,
+        "meaning": "DIAMETER_ERROR_USER_NO_NON_3GPP_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5451,
+        "meaning": "DIAMETER_ERROR_USER_NO_APN_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5452,
+        "meaning": "DIAMETER_ERROR_RAT_TYPE_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5453,
+        "meaning": "DIAMETER_ERROR_LATE_OVERLAPPING_REQUEST"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5454,
+        "meaning": "DIAMETER_ERROR_TIMED_OUT_REQUEST"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5470,
+        "meaning": "DIAMETER_ERROR_SUBSESSION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5471,
+        "meaning": "DIAMETER_ERROR_ONGOING_SESSION_ESTABLISHMENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5490,
+        "meaning": "DIAMETER_ERROR_UNAUTHORIZED_REQUESTING_NETWORK"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5510,
+        "meaning": "DIAMETER_ERROR_UNAUTHORIZED_REQUESTING_ENTITY"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5511,
+        "meaning": "DIAMETER_ERROR_UNAUTHORIZED_SERVICE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5512,
+        "meaning": "DIAMETER_ERROR_REQUESTED_RANGE_IS_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5513,
+        "meaning": "DIAMETER_ERROR_CONFIGURATION_EVENT_STORAGE_NOT_SUCCESSFUL"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5514,
+        "meaning": "DIAMETER_ERROR_CONFIGURATION_EVENT_NON_EXISTANT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5530,
+        "meaning": "DIAMETER_ERROR_INVALID_SME_ADDRESS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5531,
+        "meaning": "DIAMETER_ERROR_SC_CONGESTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5532,
+        "meaning": "DIAMETER_ERROR_SM_PROTOCOL"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5533,
+        "meaning": "DIAMETER_ERROR_TRIGGER_REPLACE_FAILURE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5534,
+        "meaning": "DIAMETER_ERROR_TRIGGER_RECALL_FAILURE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5535,
+        "meaning": "DIAMETER_ERROR_ORIGINAL_MESSAGE_NOT_PENDING"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5550,
+        "meaning": "DIAMETER_ERROR_ABSENT_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5551,
+        "meaning": "DIAMETER_ERROR_USER_BUSY_FOR_MT_SMS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5552,
+        "meaning": "DIAMETER_ERROR_FACILITY_NOT_SUPPORTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5553,
+        "meaning": "DIAMETER_ERROR_ILLEGAL_USER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5554,
+        "meaning": "DIAMETER_ERROR_ILLEGAL_EQUIPMENT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5555,
+        "meaning": "DIAMETER_ERROR_SM_DELIVERY_FAILURE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5556,
+        "meaning": "DIAMETER_ERROR_SERVICE_NOT_SUBSCRIBED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5557,
+        "meaning": "DIAMETER_ERROR_SERVICE_BARRED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5558,
+        "meaning": "DIAMETER_ERROR_MWD_LIST_FULL"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5570,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_POLICY_COUNTERS"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5590,
+        "meaning": "DIAMETER_ERROR_ORIGIN_ALUID_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5591,
+        "meaning": "DIAMETER_ERROR_TARGET_ALUID_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5592,
+        "meaning": "DIAMETER_ERROR_PFID_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5593,
+        "meaning": "DIAMETER_ERROR_APP_REGISTER_REJECT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5594,
+        "meaning": "DIAMETER_ERROR_PROSE_MAP_REQUEST_DISALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5595,
+        "meaning": "DIAMETER_ERROR_MAP_REQUEST_REJECT"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5610,
+        "meaning": "DIAMETER_ERROR_UNKNOWN_PROSE_SUBSCRIPTION"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5611,
+        "meaning": "DIAMETER_ERROR_PROSE_NOT_ALLOWED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5612,
+        "meaning": "DIAMETER_ERROR_UE_LOCATION_UNKNOWN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5630,
+        "meaning": "DIAMETER_ERROR_NO_ASSOCIATED_DISCOVERY_FILTER"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5631,
+        "meaning": "DIAMETER_ERROR_ANNOUNCING_UNAUTHORIZED_IN_PLMN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5632,
+        "meaning": "DIAMETER_ERROR_INVALID_APPLICATION_CODE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5633,
+        "meaning": "DIAMETER_ERROR_PROXIMITY_UNAUTHORIZED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5634,
+        "meaning": "DIAMETER_ERROR_PROXIMITY_REJECTED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5635,
+        "meaning": "DIAMETER_ERROR_NO_PROXIMITY_REQUEST"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5636,
+        "meaning": "DIAMETER_ERROR_UNAUTHORIZED_SERVICE_IN_THIS_PLMN"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5637,
+        "meaning": "DIAMETER_ERROR_PROXIMITY_CANCELLED"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5638,
+        "meaning": "DIAMETER_ERROR_INVALID_TARGET_PDUID"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5639,
+        "meaning": "DIAMETER_ERROR_INVALID_TARGET_RPAUID"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5640,
+        "meaning": "DIAMETER_ERROR_NO_ASSOCIATED_RESTRICTED_CODE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5641,
+        "meaning": "DIAMETER_ERROR_INVALID_DISCOVERY_TYPE"
+      },
+      {
+        "avp": "Experimental-Result-Code",
+        "category": "Permanent Failures",
+        "prefix_code": "1",
+        "value": 5650,
+        "meaning": "DIAMETER_ERROR_REQUESTED_LOCATION_NOT_SERVED"
+      }
+    ]
+  },
+  "GTPv2C": {
+    "protocol": "GTPv2-C",
+    "ie": "Cause",
+    "entries": [
+      {
+        "message_type": "Request / Initial message",
+        "value": 1,
+        "meaning": "Reserved"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 2,
+        "meaning": "Local Detach"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 3,
+        "meaning": "Complete Detach"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 4,
+        "meaning": "RAT changed from 3GPP to Non-3GPP"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 5,
+        "meaning": "ISR deactivation"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 6,
+        "meaning": "Error Indication received from RNC/eNodeB/S4-SGSN"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 7,
+        "meaning": "IMSI Detach Only"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 8,
+        "meaning": "Reactivation Requested"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 9,
+        "meaning": "PDN reconnection to this APN disallowed"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 10,
+        "meaning": "Access changed from Non-3GPP to 3GPP"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 11,
+        "meaning": "PDN connection inactivity timer expires"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 12,
+        "meaning": "PGW not responding"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 13,
+        "meaning": "Network Failure"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 14,
+        "meaning": "QoS parameter mismatch"
+      },
+      {
+        "message_type": "Request / Initial message",
+        "value": 15,
+        "meaning": "Spare"
+      },
+      {
+        "message_type": "Acceptance in a Response / triggered message",
+        "value": 16,
+        "meaning": "Request accepted"
+      },
+      {
+        "message_type": "Acceptance in a Response / triggered message",
+        "value": 17,
+        "meaning": "Request accepted partially"
+      },
+      {
+        "message_type": "Acceptance in a Response / triggered message",
+        "value": 18,
+        "meaning": "New PDN type due to network preference."
+      },
+      {
+        "message_type": "Acceptance in a Response / triggered message",
+        "value": 19,
+        "meaning": "New PDN type due to single address bearer only."
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 64,
+        "meaning": "Context Not Found"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 65,
+        "meaning": "Invalid Message Format"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 66,
+        "meaning": "Version not supported by next peer"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 67,
+        "meaning": "Invalid length"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 68,
+        "meaning": "Service not supported"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 69,
+        "meaning": "Mandatory IE incorrect"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 70,
+        "meaning": "Mandatory IE missing"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 71,
+        "meaning": "Shall not be used"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 72,
+        "meaning": "System failure"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 73,
+        "meaning": "No resources available"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 74,
+        "meaning": "Semantic error in the TFT operation"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 75,
+        "meaning": "Syntactic error in the TFT operation"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 76,
+        "meaning": "Semantic errors in packet filter(s)"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 77,
+        "meaning": "Syntactic errors in packet filter(s)"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 78,
+        "meaning": "Missing or unknown APN"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 79,
+        "meaning": "Shall not be used"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 80,
+        "meaning": "GRE key not found"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 81,
+        "meaning": "Relocation failure"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 82,
+        "meaning": "Denied in RAT"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 83,
+        "meaning": "Preferred PDN type not supported"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 84,
+        "meaning": "All dynamic addresses are occupied"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 85,
+        "meaning": "UE context without TFT already activated"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 86,
+        "meaning": "Protocol type not supported"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 87,
+        "meaning": "UE not responding"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 88,
+        "meaning": "UE refuses"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 89,
+        "meaning": "Service denied"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 90,
+        "meaning": "Unable to page UE"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 91,
+        "meaning": "No memory available"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 92,
+        "meaning": "User authentication failed"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 93,
+        "meaning": "APN access denied – no subscription"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 94,
+        "meaning": "Request rejected (reason not specified)"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 95,
+        "meaning": "P-TMSI Signature mismatch"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 96,
+        "meaning": "IMSI/IMEI not known"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 97,
+        "meaning": "Semantic error in the TAD operation"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 98,
+        "meaning": "Syntactic error in the TAD operation"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 99,
+        "meaning": "Shall not be used"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 100,
+        "meaning": "Remote peer not responding"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 101,
+        "meaning": "Collision with network initiated request"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 102,
+        "meaning": "Unable to page UE due to Suspension"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 103,
+        "meaning": "Conditional IE missing"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 104,
+        "meaning": "APN Restriction type Incompatible with currently active PDN connection"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 105,
+        "meaning": "Invalid overall length of the triggered response message and a piggybacked initial message"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 106,
+        "meaning": "Data forwarding not supported"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 107,
+        "meaning": "Invalid reply from remote peer"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 108,
+        "meaning": "Fallback to GTPv1"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 109,
+        "meaning": "Invalid peer"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 110,
+        "meaning": "Temporarily rejected due to handover procedure in progress"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 111,
+        "meaning": "Modifications not limited to S1-U bearers"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 112,
+        "meaning": "Request rejected for a PMIPv6 reason"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 113,
+        "meaning": "APN Congestion"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 114,
+        "meaning": "Bearer handling not supported"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 115,
+        "meaning": "UE already re-attached"
+      },
+      {
+        "message_type": "Rejection in a Response / triggered message",
+        "value": 116,
+        "meaning": "Multiple PDN connections for a given APN not allowed"
+      }
+    ]
+  },
+  "GTPv1C": {
+    "protocol": "GTPv1-C",
+    "ie": "Cause",
+    "entries": [
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 0,
+        "meaning": "Request IMSI"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 1,
+        "meaning": "Request IMEI"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 2,
+        "meaning": "Request IMSI and IMEI"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 3,
+        "meaning": "No identity needed"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 4,
+        "meaning": "MS Refuses"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 5,
+        "meaning": "MS is not GPRS Responding"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 6,
+        "meaning": "Reactivation Requested"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 7,
+        "meaning": "PDP address inactivity timer expires"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 8,
+        "meaning": "Network Failure"
+      },
+      {
+        "message_type": "Request",
+        "response_type": null,
+        "value": 9,
+        "meaning": "QoS parameter mismatch"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "accepted",
+        "value": 128,
+        "meaning": "Request accepted"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "accepted",
+        "value": 129,
+        "meaning": "New PDP type due to network preference"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "accepted",
+        "value": 130,
+        "meaning": "New PDP type due to single address bearer only"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 192,
+        "meaning": "Non-existent"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 193,
+        "meaning": "Invalid message format"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 194,
+        "meaning": "IMSI/IMEI not known"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 195,
+        "meaning": "MS is GPRS Detached"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 196,
+        "meaning": "MS is not GPRS Responding"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 197,
+        "meaning": "MS Refuses"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 198,
+        "meaning": "Version not supported"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 199,
+        "meaning": "No resources available"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 200,
+        "meaning": "Service not supported"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 201,
+        "meaning": "Mandatory IE incorrect"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 202,
+        "meaning": "Mandatory IE missing"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 203,
+        "meaning": "Optional IE incorrect"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 204,
+        "meaning": "System failure"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 205,
+        "meaning": "Roaming restriction"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 206,
+        "meaning": "P-TMSI Signature mismatch"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 207,
+        "meaning": "GPRS connection suspended"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 208,
+        "meaning": "Authentication failure"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 209,
+        "meaning": "User authentication failed"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 210,
+        "meaning": "Context not found"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 211,
+        "meaning": "All dynamic PDP addresses are occupied"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 212,
+        "meaning": "No memory is available"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 213,
+        "meaning": "Relocation failure"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 214,
+        "meaning": "Unknown mandatory extension header"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 215,
+        "meaning": "Semantic error in the TFT operation"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 216,
+        "meaning": "Syntactic error in the TFT operation"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 217,
+        "meaning": "Semantic errors in packet filter(s)"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 218,
+        "meaning": "Syntactic errors in packet filter(s)"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 219,
+        "meaning": "Missing or unknown APN"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 220,
+        "meaning": "Unknown PDP address or PDP type"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 221,
+        "meaning": "PDP context without TFT already activated"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 222,
+        "meaning": "APN access denied – no subscription"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 223,
+        "meaning": "APN Restriction type incompatibility with currently active PDP Contexts"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 224,
+        "meaning": "MS MBMS Capabilities Insufficient"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 225,
+        "meaning": "Invalid Correlation-ID"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 226,
+        "meaning": "MBMS Bearer Context Superseded"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 227,
+        "meaning": "Bearer Control Mode violation"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 228,
+        "meaning": "Collision with network initiated request"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 229,
+        "meaning": "APN Congestion"
+      },
+      {
+        "message_type": "Response",
+        "response_type": "rejected",
+        "value": 230,
+        "meaning": "Bearer handling not supported"
+      }
+    ]
+  },
+  "SM_CP": {
+    "protocol": "SGd/SMS",
+    "ie": "CP-Cause",
+    "entries": [
+      {
+        "value": 17,
+        "meaning": "Network failure"
+      },
+      {
+        "value": 22,
+        "meaning": "Congestion"
+      },
+      {
+        "value": 81,
+        "meaning": "Invalid Transaction Identifier value"
+      },
+      {
+        "value": 95,
+        "meaning": "Semantically incorrect message"
+      },
+      {
+        "value": 96,
+        "meaning": "Invalid mandatory information"
+      },
+      {
+        "value": 97,
+        "meaning": "Message type non-existent or not implemented"
+      },
+      {
+        "value": 98,
+        "meaning": "Message not compatible with the short message protocol state"
+      },
+      {
+        "value": 99,
+        "meaning": "Information element non-existent or not implemented"
+      },
+      {
+        "value": 111,
+        "meaning": "Protocol error, unspecified"
+      }
+    ]
+  },
+  "SM_RP": {
+    "protocol": "SGd/SMS",
+    "ie": "RP-Cause",
+    "entries": [
+      {
+        "value": 1,
+        "meaning": "Unassigned (unallocated) number",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 8,
+        "meaning": "Operator determined barring",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 10,
+        "meaning": "Call barred",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 11,
+        "meaning": "Reserved",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 21,
+        "meaning": "Short message transfer rejected",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 22,
+        "meaning": "Memory capacity exceeded"
+      },
+      {
+        "value": 27,
+        "meaning": "Destination out of order",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 28,
+        "meaning": "Unidentified subscriber",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 29,
+        "meaning": "Facility rejected",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 30,
+        "meaning": "Unknown subscriber",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 38,
+        "meaning": "Network out of order",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 41,
+        "meaning": "Temporary failure",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 42,
+        "meaning": "Congestion",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 47,
+        "meaning": "Resources unavailable, unspecified",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 50,
+        "meaning": "Requested facility not subscribed",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 69,
+        "meaning": "Requested facility not implemented",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "value": 81,
+        "meaning": "Invalid short message transfer reference value",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 95,
+        "meaning": "Semantically incorrect message",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 96,
+        "meaning": "Invalid mandatory information",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 97,
+        "meaning": "Message type non-existent or not implemented",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 98,
+        "meaning": "Message not compatible with short message protocol state",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 99,
+        "meaning": "Information element non-existent or not implemented",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 111,
+        "meaning": "Protocol error, unspecified",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "value": 127,
+        "meaning": "Interworking, unspecified",
+        "applicable_mo": true,
+        "applicable_mt": false
+      }
+    ]
+  },
+  "SM_TP": {
+    "protocol": "SGd/SMS",
+    "ie": "TP-Failure-Cause",
+    "entries": [
+      {
+        "category": "TP-PID errors",
+        "value": 128,
+        "meaning": "Telematic interworking not supported",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-PID errors",
+        "value": 129,
+        "meaning": "Short message Type 0 not supported",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-PID errors",
+        "value": 130,
+        "meaning": "Cannot replace short message",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-PID errors",
+        "value": 143,
+        "meaning": "Unspecified TP-PID error",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-DCS errors",
+        "value": 144,
+        "meaning": "Data coding scheme (alphabet) not supported",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-DCS errors",
+        "value": 145,
+        "meaning": "Message class not supported",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-DCS errors",
+        "value": 159,
+        "meaning": "Unspecified TP-DCS error",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 160,
+        "meaning": "Command cannot be actioned",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 161,
+        "meaning": "Command unsupported",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 175,
+        "meaning": "Unspecified TP-Command error",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 176,
+        "meaning": "TPDU not supported",
+        "applicable_mo": true,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 192,
+        "meaning": "SC busy",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 193,
+        "meaning": "No SC subscription",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 194,
+        "meaning": "SC system failure",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 195,
+        "meaning": "Invalid SME address",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 196,
+        "meaning": "Destination SME barred",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 197,
+        "meaning": "SM Rejected-Duplicate SM",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 198,
+        "meaning": "TP-VPF not supported",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 199,
+        "meaning": "TP-VP not supported",
+        "applicable_mo": true,
+        "applicable_mt": false
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 208,
+        "meaning": "(U)SIM SMS storage full",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 209,
+        "meaning": "No SMS storage capability in (U)SIM",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 210,
+        "meaning": "Error in MS",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 211,
+        "meaning": "Memory Capacity Exceeded",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 212,
+        "meaning": "(U)SIM Application Toolkit Busy",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 213,
+        "meaning": "(U)SIM data download error",
+        "applicable_mo": false,
+        "applicable_mt": true
+      },
+      {
+        "category": "TP-Command Errors",
+        "value": 255,
+        "meaning": "Unspecified error cause",
+        "applicable_mo": true,
+        "applicable_mt": true
+      }
+    ]
+  },
+  "Process_Specific": {
+    "protocol": "XDR_Internal",
+    "ie": "Process_Specific_Cause",
+    "note": "XDR 내부 처리 전용 코드 (3GPP 비표준). 값 900은 TIMEOUT을 의미하며 명시적 프로토콜 reject 없이 응답 없음으로 종료된 경우를 나타냄.",
+    "entries": [
+      {
+        "value": 900,
+        "meaning": "TIMEOUT"
+      }
+    ]
+  }
+}
