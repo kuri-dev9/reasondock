@@ -6,6 +6,21 @@ export interface Reference {
   job_id?: number;
 }
 
+export interface PromptMetrics {
+  use_uce: boolean;
+  fallback_used: boolean;
+  original_prompt_tokens?: number | null;
+  final_prompt_tokens?: number | null;
+  compression_ratio?: number | null;
+  build_context_latency_ms?: number | null;
+  llm_first_token_ms?: number | null;
+  llm_total_latency_ms?: number | null;
+  selected_context_count?: number | null;
+  dropped_context_count?: number | null;
+  intent?: string | null;
+  topic_relation?: string | null;
+}
+
 export interface Message {
   id: number;
   conversation_id: number;
@@ -13,6 +28,7 @@ export interface Message {
   content: string;
   created_at: string;
   references?: Reference[];
+  metrics?: PromptMetrics | null;
 }
 
 export interface Conversation {
@@ -92,5 +108,6 @@ export interface RcaStreamEvent {
   token?: string;
   message_id?: number;
   message?: Message;
+  metadata?: PromptMetrics;
   error?: string;
 }

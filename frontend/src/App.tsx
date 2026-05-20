@@ -6,7 +6,7 @@ import ModelSelector from './components/ModelSelector';
 import ThemeToggle from './components/ThemeToggle';
 import KnowledgePanel from './components/KnowledgePanel';
 import SystemPromptEditor from './components/SystemPromptEditor';
-import { Conversation, Message, OllamaModel, Attachment, Reference } from './types';
+import { Conversation, Message, OllamaModel, Attachment, PromptMetrics } from './types';
 import {
   fetchConversations,
   createConversation,
@@ -39,6 +39,7 @@ function App() {
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const [currentSystemPrompt, setCurrentSystemPrompt] = useState('');
   const [dark, setDark] = useState(true);
+  const [useUce, setUseUce] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeConvIdRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -227,7 +228,7 @@ function App() {
     setThinkingContent('');
 
     try {
-      const response = await uploadRcaFile(convId, file);
+      const response = await uploadRcaFile(convId, file, useUce);
       let source: EventSource | null = null;
       source = streamRcaJob(
         response.job.id,
@@ -329,13 +330,13 @@ function App() {
       setConversations((prev) => [conv, ...prev]);
       setActiveConvId(conv.id);
       setMessages([]);
-      sendMessage(conv.id, message);
+      sendMessage(conv.id, message, useUce);
     } else {
-      sendMessage(activeConvId, message);
+      sendMessage(activeConvId, message, useUce);
     }
   };
 
-  const sendMessage = (convId: number, message: string) => {
+  const sendMessage = (convId: number, message: string, useUceForMessage: boolean) => {
     const userMsg: Message = {
       id: Date.now(),
       conversation_id: convId,
@@ -354,11 +355,12 @@ function App() {
     const controller = streamChat(
       convId,
       message,
+      useUceForMessage,
       (token) => {
         if (activeConvIdRef.current !== convId) return;
         setStreamingContent((prev) => prev + token);
       },
-      (title, references) => {
+      (title, references, metadata?: PromptMetrics) => {
         setStreamingContent((prev) => {
           if (prev) {
             const assistantMsg: Message = {
@@ -368,6 +370,7 @@ function App() {
               content: prev,
               created_at: new Date().toISOString(),
               references,
+              metrics: metadata,
             };
             setMessages((msgs) => [...msgs, assistantMsg]);
           }
@@ -437,7 +440,7 @@ function App() {
             </div>
           )}
           {messages.map((msg) => (
-            <ChatMessage key={msg.id} role={msg.role} content={msg.content} references={msg.references} />
+            <ChatMessage key={msg.id} role={msg.role} content={msg.content} references={msg.references} metrics={msg.metrics} />
           ))}
           {streaming && !streamingContent && thinkingContent && (
             <div className="message assistant">
@@ -475,6 +478,8 @@ function App() {
           attachments={attachments}
           disabled={streaming}
           streaming={streaming}
+          useUce={useUce}
+          onUseUceChange={setUseUce}
         />
       </main>
       <KnowledgePanel visible={knowledgeOpen} onClose={() => setKnowledgeOpen(false)} />

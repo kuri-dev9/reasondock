@@ -331,6 +331,42 @@ body {
   font-weight: 600;
 }
 
+.uce-debug-panel {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.uce-debug-toggle {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.uce-debug-table {
+  margin-top: 8px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.uce-debug-table th,
+.uce-debug-table td {
+  border: 1px solid var(--border);
+  padding: 5px 7px;
+}
+
+.uce-debug-table th {
+  width: 45%;
+  color: var(--text-secondary);
+  font-weight: 500;
+  background: var(--bg-secondary);
+}
+
 /* Chat Input */
 .chat-input-wrapper {
   border-top: 1px solid var(--border);
@@ -344,6 +380,35 @@ body {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+}
+
+.prompt-options-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.uce-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.uce-toggle.enabled {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.uce-toggle input {
+  margin: 0;
 }
 
 .chat-input {

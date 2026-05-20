@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +8,11 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
+from app.config import settings
 from app.models import Conversation, Message, Attachment, KnowledgeDocument
 from app.schemas import ChatRequest
 from app.services.llm import LLMError, chat as llm_chat, stream_chat
+from app.services import uce_client
 from app import vector_store
 from app.tokenizer import tokenize as _tokenize
 
@@ -42,6 +45,56 @@ TITLE_STOPWORDS = {
     "for",
     "with",
 }
+
+
+def _estimate_prompt_tokens(messages: list[dict]) -> int:
+    text = "\n".join(str(message.get("content", "")) for message in messages)
+    return max(1, len(text) // 4) if text else 0
+
+
+def _legacy_metrics(messages: list[dict]) -> dict:
+    prompt_tokens = _estimate_prompt_tokens(messages)
+    return {
+        "use_uce": False,
+        "fallback_used": False,
+        "original_prompt_tokens": prompt_tokens,
+        "final_prompt_tokens": prompt_tokens,
+        "compression_ratio": 1.0,
+        "build_context_latency_ms": 0,
+        "llm_first_token_ms": None,
+        "llm_total_latency_ms": None,
+        "selected_context_count": 0,
+        "dropped_context_count": 0,
+        "intent": None,
+        "topic_relation": None,
+    }
+
+
+def _uce_metrics(uce_result: uce_client.UceContextResult, fallback_used: bool = False) -> dict:
+    metadata = uce_result.metadata
+    prompt_pack = uce_result.prompt_pack
+    return {
+        "use_uce": not fallback_used,
+        "fallback_used": fallback_used,
+        "original_prompt_tokens": prompt_pack.get("original_tokens"),
+        "final_prompt_tokens": prompt_pack.get("estimated_tokens"),
+        "compression_ratio": metadata.get("compression_ratio"),
+        "build_context_latency_ms": uce_result.latency_ms,
+        "llm_first_token_ms": None,
+        "llm_total_latency_ms": None,
+        "selected_context_count": metadata.get("selected_context_count", 0),
+        "dropped_context_count": metadata.get("dropped_context_count", 0),
+        "intent": metadata.get("primary_intent"),
+        "topic_relation": metadata.get("topic_relation"),
+    }
+
+
+def _messages_from_uce_prompt(system_prompt: str | None, prompt_pack_content: str) -> list[dict]:
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt_pack_content})
+    return messages
 
 
 def _clean_title_candidate(title: str) -> str:
@@ -269,13 +322,61 @@ async def chat(
     for m in conv.messages:
         messages.append({"role": m.role, "content": m.content})
     messages.append({"role": "user", "content": data.message})
+    legacy_messages = list(messages)
+    prompt_metrics = _legacy_metrics(legacy_messages)
+
+    if data.use_uce and settings.uce_enabled:
+        rag_chunks = []
+        for index, result in enumerate(results if "results" in locals() else []):
+            rag_chunks.append(
+                {
+                    "id": result.get("id") or f"rag_chunk_{index + 1}",
+                    "title": result.get("filename") or f"RAG Chunk {index + 1}",
+                    "content": result.get("content", ""),
+                    "source": result.get("filename") or "vector_store",
+                    "importance": 0.85 if result.get("doc_id") in (priority_doc_ids if "priority_doc_ids" in locals() else set()) else 0.7,
+                }
+            )
+        for index, att in enumerate(conv.attachments or []):
+            rag_chunks.append(
+                {
+                    "id": f"attachment_{att.id}",
+                    "title": att.filename,
+                    "content": att.content_text[:8000],
+                    "source": "attachment",
+                    "importance": 0.8,
+                }
+            )
+        try:
+            uce_result = await uce_client.build_context(
+                conversation_id=conversation_id,
+                current_message=data.message,
+                recent_messages=list(conv.messages)[-15:],
+                rag_chunks=rag_chunks,
+                model=conv.model,
+            )
+            messages = _messages_from_uce_prompt(conv.system_prompt, uce_result.prompt_pack["content"])
+            prompt_metrics = _uce_metrics(uce_result)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("UCE failed; falling back to legacy prompt flow")
+            messages = legacy_messages
+            prompt_metrics = _legacy_metrics(legacy_messages)
+            prompt_metrics["fallback_used"] = True
 
     async def generate():
         full_response = ""
+        stream_started = time.perf_counter()
+        first_token_seen = False
+        metrics = dict(prompt_metrics)
         async for event in stream_chat(conv.model, messages, timeout=300.0):
             if event["type"] == "thinking":
                 yield f"data: {json.dumps({'thinking': event['content']})}\n\n"
             elif event["type"] == "token":
+                if not first_token_seen:
+                    metrics["llm_first_token_ms"] = int((time.perf_counter() - stream_started) * 1000)
+                    first_token_seen = True
                 full_response += event["content"]
                 yield f"data: {json.dumps({'token': event['content']})}\n\n"
             elif event["type"] == "error":
@@ -285,9 +386,11 @@ async def chat(
                 break
 
         if full_response.strip():
+            metrics["llm_total_latency_ms"] = int((time.perf_counter() - stream_started) * 1000)
             assistant_message = Message(
                 conversation_id=conversation_id, role="assistant", content=full_response,
-                references=rag_references if rag_references else None
+                references=rag_references if rag_references else None,
+                metrics=metrics,
             )
             db.add(assistant_message)
             await db.commit()
@@ -303,6 +406,7 @@ async def chat(
             await db.commit()
 
         done_data = {'done': True, 'title': title}
+        done_data['metadata'] = metrics
         if rag_references:
             done_data['references'] = rag_references
         yield f"data: {json.dumps(done_data)}\n\n"

@@ -6,6 +6,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+ARG REACT_APP_UCE_DEBUG=false
+ENV REACT_APP_UCE_DEBUG=$REACT_APP_UCE_DEBUG
 RUN npm run build
 
 # Production: nginx로 서빙

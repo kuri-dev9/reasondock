@@ -11,6 +11,7 @@ class MessageResponse(MessageBase):
     id: int
     conversation_id: int
     references: list[dict] | None = None
+    metrics: dict | None = None
     created_at: datetime
 
     class Config:
@@ -47,6 +48,7 @@ class ConversationDetailResponse(ConversationResponse):
 
 class ChatRequest(BaseModel):
     message: str
+    use_uce: bool = False
 
     @field_validator("message")
     @classmethod

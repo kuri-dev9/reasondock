@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 
 from app.database import engine, Base
@@ -20,6 +21,10 @@ async def _ensure_longtext_columns(conn):
     ]
     for statement in statements:
         await conn.execute(text(statement))
+    try:
+        await conn.execute(text("ALTER TABLE messages ADD COLUMN metrics JSON NULL"))
+    except SQLAlchemyError:
+        pass
 
 
 @asynccontextmanager

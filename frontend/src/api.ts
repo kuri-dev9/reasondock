@@ -1,4 +1,4 @@
-import { RcaAnalyzeResponse, RcaStreamEvent, Reference, SearchResult } from './types';
+import { PromptMetrics, RcaAnalyzeResponse, RcaStreamEvent, Reference, SearchResult } from './types';
 
 const API_BASE = '/api';
 
@@ -78,9 +78,10 @@ export async function deleteAttachment(conversationId: number, attachmentId: num
   });
 }
 
-export async function uploadRcaFile(conversationId: number, file: File): Promise<RcaAnalyzeResponse> {
+export async function uploadRcaFile(conversationId: number, file: File, useUce = false): Promise<RcaAnalyzeResponse> {
   const formData = new FormData();
   formData.append('conversation_id', String(conversationId));
+  formData.append('use_uce', String(useUce));
   formData.append('file', file);
   const res = await fetch(`${API_BASE}/rca/jobs`, {
     method: 'POST',
@@ -186,8 +187,9 @@ export async function importConversation(file: File) {
 export function streamChat(
   conversationId: number,
   message: string,
+  useUce: boolean,
   onToken: (token: string) => void,
-  onDone: (title?: string, references?: Reference[]) => void,
+  onDone: (title?: string, references?: Reference[], metadata?: PromptMetrics) => void,
   onError: (err: string) => void,
   onThinking?: (token: string) => void,
 ) {
@@ -196,7 +198,7 @@ export function streamChat(
   fetch(`${API_BASE}/conversations/${conversationId}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, use_uce: useUce }),
     signal: controller.signal,
   }).then(async (response) => {
     const reader = response.body?.getReader();
@@ -219,7 +221,7 @@ export function streamChat(
             const data = JSON.parse(line.slice(6));
             if (data.thinking && onThinking) onThinking(data.thinking);
             if (data.token) onToken(data.token);
-            if (data.done) onDone(data.title || undefined, data.references || undefined);
+            if (data.done) onDone(data.title || undefined, data.references || undefined, data.metadata || undefined);
             if (data.error) onError(data.error);
           } catch {}
         }

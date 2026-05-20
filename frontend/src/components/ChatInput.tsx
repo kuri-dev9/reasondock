@@ -10,9 +10,11 @@ interface Props {
   attachments: Attachment[];
   disabled: boolean;
   streaming: boolean;
+  useUce: boolean;
+  onUseUceChange: (enabled: boolean) => void;
 }
 
-export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload, onFileRemove, attachments, disabled, streaming }: Props) {
+export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload, onFileRemove, attachments, disabled, streaming, useUce, onUseUceChange }: Props) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [rcaUploading, setRcaUploading] = useState(false);
@@ -94,6 +96,17 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
           ))}
         </div>
       )}
+      <div className="prompt-options-bar">
+        <label className={`uce-toggle ${useUce ? 'enabled' : ''}`}>
+          <input
+            type="checkbox"
+            checked={useUce}
+            onChange={(event) => onUseUceChange(event.target.checked)}
+            disabled={disabled}
+          />
+          <span>향상된 프롬프트</span>
+        </label>
+      </div>
       <div className="chat-input-container">
         <button
           className="attach-btn"

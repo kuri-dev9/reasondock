@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -10,11 +11,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import async_session, get_db
 from app.models import Conversation, Message, RcaJob, RcaResult
 from app.rca.pipeline import analyze_xdr_file
 from app.rca.prompt_builder import build_rca_prompt
 from app.services.llm import stream_chat as llm_stream_chat
+from app.services import uce_client
 from app.schemas import MessageResponse, RcaAnalyzeResponse, RcaJobResponse
 
 
@@ -94,7 +97,49 @@ def _llm_stream_error(reason: str, detail: str, raw: dict | None = None) -> str:
     return f"{reason}: {detail}"
 
 
-async def _run_rca_job(job_id: int) -> None:
+def _estimate_prompt_tokens(messages: list[dict]) -> int:
+    text = "\n".join(str(message.get("content", "")) for message in messages)
+    return max(1, len(text) // 4) if text else 0
+
+
+def _legacy_metrics(messages: list[dict], fallback_used: bool = False) -> dict:
+    prompt_tokens = _estimate_prompt_tokens(messages)
+    return {
+        "use_uce": False,
+        "fallback_used": fallback_used,
+        "original_prompt_tokens": prompt_tokens,
+        "final_prompt_tokens": prompt_tokens,
+        "compression_ratio": 1.0,
+        "build_context_latency_ms": 0,
+        "llm_first_token_ms": None,
+        "llm_total_latency_ms": None,
+        "selected_context_count": 0,
+        "dropped_context_count": 0,
+        "intent": None,
+        "topic_relation": None,
+    }
+
+
+def _uce_metrics(result: uce_client.UceContextResult) -> dict:
+    metadata = result.metadata
+    prompt_pack = result.prompt_pack
+    return {
+        "use_uce": True,
+        "fallback_used": False,
+        "original_prompt_tokens": prompt_pack.get("original_tokens"),
+        "final_prompt_tokens": prompt_pack.get("estimated_tokens"),
+        "compression_ratio": metadata.get("compression_ratio"),
+        "build_context_latency_ms": result.latency_ms,
+        "llm_first_token_ms": None,
+        "llm_total_latency_ms": None,
+        "selected_context_count": metadata.get("selected_context_count", 0),
+        "dropped_context_count": metadata.get("dropped_context_count", 0),
+        "intent": metadata.get("primary_intent"),
+        "topic_relation": metadata.get("topic_relation"),
+    }
+
+
+async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
     async with async_session() as db:
         try:
             result = await db.execute(select(RcaJob).where(RcaJob.id == job_id))
@@ -132,6 +177,46 @@ async def _run_rca_job(job_id: int) -> None:
                 },
                 {"role": "user", "content": prompt},
             ]
+            legacy_messages = list(messages)
+            prompt_metrics = _legacy_metrics(legacy_messages)
+            if use_uce and settings.uce_enabled:
+                try:
+                    uce_result = await uce_client.build_context(
+                        conversation_id=job.conversation_id,
+                        current_message=prompt,
+                        recent_messages=[],
+                        rag_chunks=[
+                            {
+                                "id": f"rca_summary_{job_id}",
+                                "title": f"RCA Summary: {job.filename}",
+                                "content": summary["markdown"],
+                                "source": job.filename,
+                                "importance": 0.9,
+                            },
+                            {
+                                "id": f"rca_json_{job_id}",
+                                "title": f"RCA JSON: {job.filename}",
+                                "content": json.dumps(summary, ensure_ascii=False),
+                                "source": job.filename,
+                                "importance": 0.85,
+                            },
+                        ],
+                        model=conversation.model,
+                    )
+                    messages = [
+                        {
+                            "role": "system",
+                            "content": "You are an LTE/EPC RCA expert. Return a grounded Korean RCA report.",
+                        },
+                        {"role": "user", "content": uce_result.prompt_pack["content"]},
+                    ]
+                    prompt_metrics = _uce_metrics(uce_result)
+                except Exception:
+                    import logging
+
+                    logging.getLogger(__name__).exception("UCE failed in RCA flow; falling back to legacy prompt")
+                    messages = legacy_messages
+                    prompt_metrics = _legacy_metrics(legacy_messages, fallback_used=True)
 
             await _update_job(db, job_id, status="llm", progress=85, current_step="llm")
             _publish(
@@ -147,6 +232,8 @@ async def _run_rca_job(job_id: int) -> None:
             thinking = ""
             done_raw: dict | None = None
             llm_error = None
+            stream_started = time.perf_counter()
+            first_token_seen = False
             async for event in llm_stream_chat(
                 conversation.model,
                 messages,
@@ -157,6 +244,9 @@ async def _run_rca_job(job_id: int) -> None:
                 if event_type == "thinking":
                     thinking += event.get("content", "")
                 elif event_type == "token":
+                    if not first_token_seen:
+                        prompt_metrics["llm_first_token_ms"] = int((time.perf_counter() - stream_started) * 1000)
+                        first_token_seen = True
                     token = event.get("content", "")
                     llm_response += token
                     _publish(job_id, {"step": "llm_token", "progress": 90, "token": token})
@@ -169,6 +259,7 @@ async def _run_rca_job(job_id: int) -> None:
                     )
 
             llm_response = llm_response.strip()
+            prompt_metrics["llm_total_latency_ms"] = int((time.perf_counter() - stream_started) * 1000)
             if not llm_response and not llm_error:
                 done_reason = (done_raw or {}).get("done_reason")
                 if done_reason == "length":
@@ -195,6 +286,7 @@ async def _run_rca_job(job_id: int) -> None:
                 summary["llm_response"] = llm_response
             if llm_error:
                 summary["llm_error"] = llm_error
+            summary["uce_metrics"] = prompt_metrics
             result_path.write_text(
                 json.dumps(summary, ensure_ascii=False, indent=2),
                 encoding="utf-8",
@@ -236,6 +328,7 @@ async def _run_rca_job(job_id: int) -> None:
                         "job_id": job_id,
                     }
                 ],
+                metrics=prompt_metrics,
             )
             db.add(message)
             await db.commit()
@@ -248,6 +341,7 @@ async def _run_rca_job(job_id: int) -> None:
                     "status": "done",
                     "message_id": message.id,
                     "message": MessageResponse.model_validate(message).model_dump(mode="json"),
+                    "metadata": prompt_metrics,
                 },
             )
         except Exception as exc:
@@ -274,6 +368,7 @@ async def _run_rca_job(job_id: int) -> None:
 async def create_rca_job(
     background_tasks: BackgroundTasks,
     conversation_id: int = Form(...),
+    use_uce: bool = Form(False),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -311,7 +406,7 @@ async def create_rca_job(
         await db.commit()
         await db.refresh(job)
         _publish(job.id, {"step": "queued", "progress": 5, "status": "queued"})
-        background_tasks.add_task(_run_rca_job, job.id)
+        background_tasks.add_task(_run_rca_job, job.id, use_uce)
         return RcaAnalyzeResponse(
             job=RcaJobResponse.model_validate(job),
             result=None,

@@ -32,6 +32,10 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-4o}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-anthropic/claude-sonnet-4-5}
       DEFAULT_OLLAMA_MODEL: ${DEFAULT_OLLAMA_MODEL:-gemma4:26b}
+      UCE_ENABLED: ${UCE_ENABLED:-true}
+      UCE_BASE_URL: ${UCE_BASE_URL:-http://uce:8080}
+      UCE_TIMEOUT_SECONDS: ${UCE_TIMEOUT_SECONDS:-15}
+      UCE_DEBUG_ENABLED: ${UCE_DEBUG_ENABLED:-true}
     extra_hosts:
       - "host-gateway:host-gateway"  # 호스트 IP 자동 해석
     ports:
@@ -46,9 +50,23 @@ services:
       mysql:
         condition: service_healthy
 
+  uce:
+    build:
+      context: ./uce
+    container_name: uce
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      LOG_LEVEL: ${UCE_LOG_LEVEL:-info}
+      UCE_LOG_LEVEL: ${UCE_LOG_LEVEL:-INFO}
+    ports:
+      - "18080:8080"
+
   frontend:
     build:
       context: ./frontend
+      args:
+        REACT_APP_UCE_DEBUG: ${REACT_APP_UCE_DEBUG:-false}
     container_name: chat_demo_frontend
     restart: unless-stopped
     ports:

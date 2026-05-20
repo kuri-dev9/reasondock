@@ -1,0 +1,3 @@
+[submodule "uce"]
+	path = uce
+	url = https://github.com/kuri-dev9/uce.git

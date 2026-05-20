@@ -175,3 +175,37 @@ npm install
 |------|--------|------|
 | `DATABASE_URL` | `mysql+aiomysql://root:root@localhost:3306/chat_demo` | MySQL 접속 URL |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API URL |
+| `UCE_ENABLED` | `false` | UCE optional middleware 사용 가능 여부 |
+| `UCE_BASE_URL` | `http://uce:8080` | UCE HTTP API 주소 |
+| `UCE_TIMEOUT_SECONDS` | `15` | UCE `/build-context` 호출 timeout |
+| `UCE_DEBUG_ENABLED` | `false` | Backend UCE debug 설정 |
+| `REACT_APP_UCE_DEBUG` | `false` | Frontend UCE debug panel 표시 여부 |
+
+## UCE Optional Middleware
+
+UCE는 독립 repository/submodule로 유지되며, reasondock은 HTTP API로만 연동합니다.
+
+```text
+Frontend
+  → backend
+  → UCE /build-context (optional)
+  → backend services/llm.py
+  → LLM
+```
+
+채팅 입력창의 **향상된 프롬프트** 토글을 켜면 해당 요청만 UCE를 사용합니다. 토글을 끄거나 `UCE_ENABLED=false`이면 기존 prompt flow가 그대로 동작합니다.
+
+UCE가 timeout, 5xx, invalid response, network error 등으로 실패하면 backend는 자동으로 legacy prompt flow로 fallback합니다. UCE는 LLM을 호출하지 않으며, 대화/메시지/첨부/지식 저장소의 소유권은 계속 reasondock backend에 있습니다.
+
+Docker Compose 실행 시 UCE는 별도 서비스로 올라옵니다.
+
+```bash
+docker compose up uce
+docker compose up backend frontend mysql
+```
+
+debug panel을 frontend에서 보려면 빌드 시 다음 값을 켭니다.
+
+```bash
+REACT_APP_UCE_DEBUG=true docker compose build frontend
+```

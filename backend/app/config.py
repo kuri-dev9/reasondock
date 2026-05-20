@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "anthropic/claude-sonnet-4-5"
     default_ollama_model: str = "gemma4:26b"
+    uce_enabled: bool = False
+    uce_base_url: str = "http://uce:8080"
+    uce_timeout_seconds: float = 15.0
+    uce_debug_enabled: bool = False
 
     class Config:
         env_file = ".env"
