@@ -394,9 +394,9 @@ function App() {
           alert(`오류: ${err}`);
         }
       },
-      (thinking) => {
+      () => {
         if (activeConvIdRef.current !== convId) return;
-        setThinkingContent((prev) => prev + thinking);
+        setThinkingContent('생각 중...');
       }
     );
     abortRef.current = controller;

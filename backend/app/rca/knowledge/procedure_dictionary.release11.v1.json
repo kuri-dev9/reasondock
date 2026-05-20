@@ -1,0 +1,597 @@
+{
+  "version": "release11-v1",
+  "description": "LTE/EPC Procedure Dictionary for proj_lte_rca",
+  "sources": [
+    "TS 24.301",
+    "TS 36.413",
+    "TS 29.274",
+    "TS 29.272",
+    "Internal RCA Guide"
+  ],
+
+  "procedures": [
+
+    {
+      "id": "ATTACH",
+      "name": "EPS Attach",
+      "category": "NAS Mobility",
+
+      "description": "Initial EPS registration and bearer establishment procedure",
+
+      "related_interfaces": [
+        "NAS-EMM",
+        "S1AP",
+        "Diameter-S6a",
+        "GTPv2-C"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "eNB",
+        "MME",
+        "HSS",
+        "SGW",
+        "PGW"
+      ],
+
+      "possible_domains": [
+        "UE",
+        "Access",
+        "Core",
+        "Configuration"
+      ],
+
+      "common_failures": [
+        "authentication_failure",
+        "subscription_restriction",
+        "signaling_timeout_unresolved",
+        "gtpc_signaling_failure",
+        "apn_mismatch"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_2",
+        "EMM_CAUSE_3",
+        "EMM_CAUSE_7",
+        "EMM_CAUSE_8",
+        "EMM_CAUSE_11",
+        "EMM_CAUSE_15",
+        "EMM_CAUSE_19",
+        "GTP_CAUSE_64",
+        "GTP_CAUSE_72",
+        "GTP_CAUSE_73"
+      ],
+
+      "important_kpis": [
+        "attempt_flag",
+        "success_flag",
+        "auth_attempt_flag",
+        "auth_success_flag"
+      ],
+
+      "important_fields": [
+        "first_error_cause",
+        "last_error_cause",
+        "first_error_message",
+        "old_call_type",
+        "old_call_Last_TAC"
+      ],
+
+      "recommended_analysis_order": [
+        "Check NAS Attach Request/Reject",
+        "Check authentication result",
+        "Check Diameter Update Location",
+        "Check GTP Create Session",
+        "Check default bearer establishment",
+        "Check APN configuration"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "DETACH",
+      "name": "EPS Detach",
+      "category": "NAS Mobility",
+
+      "description": "UE or network initiated detach procedure",
+
+      "related_interfaces": [
+        "NAS-EMM",
+        "S1AP"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "eNB",
+        "MME"
+      ],
+
+      "possible_domains": [
+        "UE",
+        "Core",
+        "Access"
+      ],
+
+      "common_failures": [
+        "device_instability",
+        "mme_context_loss",
+        "radio_link_failure"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_10"
+      ],
+
+      "important_kpis": [
+        "success_flag",
+        "drop_flag"
+      ],
+
+      "important_fields": [
+        "old_call_type",
+        "old_call_end_time",
+        "first_error_cause"
+      ],
+
+      "recommended_analysis_order": [
+        "Check detach origin",
+        "Check repeated detach history",
+        "Check UE behavior pattern",
+        "Check MME context handling"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "TAU",
+      "name": "Tracking Area Update",
+      "category": "Mobility",
+
+      "description": "Tracking area update and mobility management procedure",
+
+      "related_interfaces": [
+        "NAS-EMM",
+        "S1AP",
+        "Diameter-S6a"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "eNB",
+        "MME",
+        "HSS"
+      ],
+
+      "possible_domains": [
+        "Access",
+        "Core",
+        "Configuration"
+      ],
+
+      "common_failures": [
+        "tracking_area_restriction",
+        "signaling_timeout_unresolved",
+        "identity_resolution_failure"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_9",
+        "EMM_CAUSE_10",
+        "EMM_CAUSE_12",
+        "EMM_CAUSE_13"
+      ],
+
+      "important_kpis": [
+        "location_attempt_flag",
+        "location_success_flag"
+      ],
+
+      "important_fields": [
+        "old_call_Last_TAC",
+        "first_error_cause",
+        "last_error_cause"
+      ],
+
+      "recommended_analysis_order": [
+        "Check TAC movement history",
+        "Check TAU accept/reject",
+        "Check MME mobility context",
+        "Check roaming policy",
+        "Check tracking area configuration"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "SERVICE_REQUEST",
+      "name": "Service Request",
+      "category": "NAS Mobility",
+
+      "description": "Procedure used to resume UE service from idle state",
+
+      "related_interfaces": [
+        "NAS-EMM",
+        "S1AP",
+        "GTPv2-C"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "eNB",
+        "MME",
+        "SGW"
+      ],
+
+      "possible_domains": [
+        "Access",
+        "Core",
+        "UE"
+      ],
+
+      "common_failures": [
+        "mme_context_loss",
+        "radio_link_failure",
+        "ue_not_reachable"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_10",
+        "GTP_CAUSE_64",
+        "GTP_CAUSE_87"
+      ],
+
+      "important_kpis": [
+        "attempt_flag",
+        "success_flag",
+        "paging_attempt_flag",
+        "paging_success_flag"
+      ],
+
+      "important_fields": [
+        "first_error_cause",
+        "old_call_type"
+      ],
+
+      "recommended_analysis_order": [
+        "Check UE idle context",
+        "Check paging sequence",
+        "Check MME context restoration",
+        "Check SGW bearer context"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "AUTHENTICATION",
+      "name": "EPS Authentication",
+      "category": "Security",
+
+      "description": "Authentication and security setup procedure",
+
+      "related_interfaces": [
+        "NAS-EMM",
+        "Diameter-S6a"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "MME",
+        "HSS"
+      ],
+
+      "possible_domains": [
+        "UE",
+        "Core",
+        "Subscriber"
+      ],
+
+      "common_failures": [
+        "authentication_failure",
+        "subscriber_not_found",
+        "diameter_failure"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_2",
+        "EMM_CAUSE_3",
+        "DIAMETER_5001",
+        "DIAMETER_5004"
+      ],
+
+      "important_kpis": [
+        "auth_attempt_flag",
+        "auth_success_flag"
+      ],
+
+      "important_fields": [
+        "first_error_cause",
+        "first_error_message"
+      ],
+
+      "recommended_analysis_order": [
+        "Check Authentication Request/Response",
+        "Check Diameter AIR/AIA",
+        "Check HSS subscriber profile",
+        "Check UE USIM state"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "PAGING",
+      "name": "Paging",
+      "category": "Reachability",
+
+      "description": "UE reachability and paging procedure",
+
+      "related_interfaces": [
+        "S1AP",
+        "NAS-EMM"
+      ],
+
+      "related_network_elements": [
+        "MME",
+        "eNB",
+        "UE"
+      ],
+
+      "possible_domains": [
+        "Access",
+        "UE",
+        "Transport"
+      ],
+
+      "common_failures": [
+        "ue_not_reachable",
+        "radio_link_failure",
+        "s1_transport_failure"
+      ],
+
+      "related_cause_codes": [
+        "GTP_CAUSE_87",
+        "S1AP_RADIO_NETWORK",
+        "S1AP_TRANSPORT"
+      ],
+
+      "important_kpis": [
+        "paging_attempt_flag",
+        "paging_success_flag"
+      ],
+
+      "important_fields": [
+        "last_error_cause",
+        "old_call_Last_Cell_ID"
+      ],
+
+      "recommended_analysis_order": [
+        "Check paging success ratio",
+        "Check UE idle reachability",
+        "Check eNB paging handling",
+        "Check S1 signaling transport"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "HANDOVER",
+      "name": "S1/X2 Handover",
+      "category": "Mobility",
+
+      "description": "Mobility handover procedure between eNBs",
+
+      "related_interfaces": [
+        "S1AP",
+        "RRC",
+        "X2AP"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "Source eNB",
+        "Target eNB",
+        "MME"
+      ],
+
+      "possible_domains": [
+        "Access",
+        "RF",
+        "Transport"
+      ],
+
+      "common_failures": [
+        "handover_failure",
+        "radio_link_failure",
+        "neighbor_configuration_issue"
+      ],
+
+      "related_cause_codes": [
+        "S1AP_RADIO_NETWORK",
+        "S1AP_TRANSPORT"
+      ],
+
+      "important_kpis": [
+        "drop_flag"
+      ],
+
+      "important_fields": [
+        "old_call_Last_eNB_ID",
+        "old_call_Last_Cell_ID",
+        "first_error_cause"
+      ],
+
+      "recommended_analysis_order": [
+        "Check source/target eNB",
+        "Check RF quality",
+        "Check neighbor relation",
+        "Check handover success KPI",
+        "Check X2/S1 transport"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "PDN_CONNECTIVITY",
+      "name": "PDN Connectivity",
+      "category": "Bearer",
+
+      "description": "PDN session establishment and default bearer setup",
+
+      "related_interfaces": [
+        "NAS-ESM",
+        "GTPv2-C"
+      ],
+
+      "related_network_elements": [
+        "UE",
+        "MME",
+        "SGW",
+        "PGW"
+      ],
+
+      "possible_domains": [
+        "Core",
+        "Configuration"
+      ],
+
+      "common_failures": [
+        "apn_mismatch",
+        "default_bearer_failure",
+        "pgw_failure"
+      ],
+
+      "related_cause_codes": [
+        "EMM_CAUSE_19",
+        "GTP_CAUSE_64",
+        "GTP_CAUSE_72",
+        "GTP_CAUSE_73"
+      ],
+
+      "important_kpis": [
+        "data_attempt_flag",
+        "data_success_flag"
+      ],
+
+      "important_fields": [
+        "first_error_cause",
+        "last_error_cause"
+      ],
+
+      "recommended_analysis_order": [
+        "Check APN",
+        "Check PGW selection",
+        "Check Create Session response",
+        "Check default bearer activation"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "BEARER_MODIFICATION",
+      "name": "Bearer Modification",
+      "category": "Bearer",
+
+      "description": "Dedicated/default bearer modification procedure",
+
+      "related_interfaces": [
+        "GTPv2-C"
+      ],
+
+      "related_network_elements": [
+        "MME",
+        "SGW",
+        "PGW"
+      ],
+
+      "possible_domains": [
+        "Core"
+      ],
+
+      "common_failures": [
+        "gtpc_signaling_failure",
+        "resource_exhaustion",
+        "context_mismatch"
+      ],
+
+      "related_cause_codes": [
+        "GTP_CAUSE_64",
+        "GTP_CAUSE_72",
+        "GTP_CAUSE_73"
+      ],
+
+      "important_kpis": [
+        "data_attempt_flag",
+        "data_success_flag"
+      ],
+
+      "important_fields": [
+        "first_error_cause",
+        "last_error_cause"
+      ],
+
+      "recommended_analysis_order": [
+        "Check bearer context",
+        "Check SGW/PGW synchronization",
+        "Check EPC resource state"
+      ],
+
+      "review_status": "draft"
+    },
+
+    {
+      "id": "DELETE_SESSION",
+      "name": "Delete Session",
+      "category": "Bearer",
+
+      "description": "Session release and bearer cleanup procedure",
+
+      "related_interfaces": [
+        "GTPv2-C"
+      ],
+
+      "related_network_elements": [
+        "MME",
+        "SGW",
+        "PGW"
+      ],
+
+      "possible_domains": [
+        "Core"
+      ],
+
+      "common_failures": [
+        "context_loss",
+        "session_cleanup_failure"
+      ],
+
+      "related_cause_codes": [
+        "GTP_CAUSE_64"
+      ],
+
+      "important_kpis": [
+        "drop_flag"
+      ],
+
+      "important_fields": [
+        "last_error_cause",
+        "old_call_end_time"
+      ],
+
+      "recommended_analysis_order": [
+        "Check bearer cleanup",
+        "Check stale session handling",
+        "Check EPC context synchronization"
+      ],
+
+      "review_status": "draft"
+    }
+
+  ]
+}

@@ -2,6 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ENV RCA_DEBUG_ENABLED=true
+
 # 시스템 패키지
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \

@@ -1,0 +1,499 @@
+{
+  "version": "release11-v1",
+  "description": "LTE/EPC RCA Cause Dictionary based on 3GPP Release 11",
+  "sources": [
+    "TS 24.301",
+    "TS 29.274",
+    "TS 29.272",
+    "TS 36.413"
+  ],
+
+  "causes": [
+
+    {
+      "id": "EMM_CAUSE_2",
+      "protocol": "NAS-EMM",
+      "code": 2,
+      "name": "IMSI unknown in HSS",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Core", "Subscriber"],
+      "related_taxonomy": [
+        "subscriber_not_found",
+        "hss_subscription_issue"
+      ],
+      "related_procedures": [
+        "Attach",
+        "TAU"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check HSS subscriber provisioning",
+        "Verify IMSI existence",
+        "Check HSS synchronization"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_3",
+      "protocol": "NAS-EMM",
+      "code": 3,
+      "name": "Illegal UE",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["UE"],
+      "related_taxonomy": [
+        "authentication_failure",
+        "imei_restriction"
+      ],
+      "related_procedures": [
+        "Attach",
+        "Authentication"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check IMEI blacklist",
+        "Check EIR",
+        "Check UE firmware"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_6",
+      "protocol": "NAS-EMM",
+      "code": 6,
+      "name": "Illegal ME",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["UE"],
+      "related_taxonomy": [
+        "device_restriction",
+        "imei_restriction"
+      ],
+      "related_procedures": [
+        "Attach"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check EIR database",
+        "Check device status"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_7",
+      "protocol": "NAS-EMM",
+      "code": 7,
+      "name": "EPS services not allowed",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Subscriber", "Core"],
+      "related_taxonomy": [
+        "subscription_restriction"
+      ],
+      "related_procedures": [
+        "Attach"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check subscriber EPS profile",
+        "Check HSS service configuration"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_8",
+      "protocol": "NAS-EMM",
+      "code": 8,
+      "name": "EPS services and non-EPS services not allowed",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Subscriber"],
+      "related_taxonomy": [
+        "subscription_barred"
+      ],
+      "related_procedures": [
+        "Attach"
+      ],
+      "severity_default": "Critical",
+      "recommended_actions": [
+        "Check subscriber barring state",
+        "Check HSS profile"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_9",
+      "protocol": "NAS-EMM",
+      "code": 9,
+      "name": "UE identity cannot be derived by the network",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Core", "UE"],
+      "related_taxonomy": [
+        "identity_resolution_failure"
+      ],
+      "related_procedures": [
+        "Attach",
+        "Identification"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check GUTI handling",
+        "Check MME context",
+        "Check UE identity state"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_10",
+      "protocol": "NAS-EMM",
+      "code": 10,
+      "name": "Implicitly detached",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Core", "Access"],
+      "related_taxonomy": [
+        "mme_context_loss",
+        "idle_context_expiry"
+      ],
+      "related_procedures": [
+        "TAU",
+        "Service Request"
+      ],
+      "severity_default": "Minor",
+      "recommended_actions": [
+        "Check MME restart history",
+        "Check UE idle timer",
+        "Check TAU behavior"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_11",
+      "protocol": "NAS-EMM",
+      "code": 11,
+      "name": "PLMN not allowed",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Roaming", "Subscriber"],
+      "related_taxonomy": [
+        "roaming_restriction"
+      ],
+      "related_procedures": [
+        "Attach",
+        "PLMN Selection"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check roaming agreement",
+        "Check PLMN access policy"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_12",
+      "protocol": "NAS-EMM",
+      "code": 12,
+      "name": "Tracking area not allowed",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Access", "Configuration"],
+      "related_taxonomy": [
+        "tracking_area_restriction"
+      ],
+      "related_procedures": [
+        "TAU",
+        "Attach"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check TAC configuration",
+        "Check TA list provisioning"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_13",
+      "protocol": "NAS-EMM",
+      "code": 13,
+      "name": "Roaming not allowed in this tracking area",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Roaming"],
+      "related_taxonomy": [
+        "roaming_restriction"
+      ],
+      "related_procedures": [
+        "Attach",
+        "TAU"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check roaming policy",
+        "Check TAC roaming restriction"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_15",
+      "protocol": "NAS-EMM",
+      "code": 15,
+      "name": "No suitable cells in tracking area",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Access", "RF"],
+      "related_taxonomy": [
+        "radio_coverage_issue",
+        "cell_selection_failure"
+      ],
+      "related_procedures": [
+        "Cell Selection",
+        "Attach"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check RF coverage",
+        "Check PCI/TAC consistency",
+        "Check neighbor configuration"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "EMM_CAUSE_19",
+      "protocol": "NAS-EMM",
+      "code": 19,
+      "name": "ESM failure",
+      "spec": "TS 24.301",
+      "release": "11",
+      "possible_domains": ["Core"],
+      "related_taxonomy": [
+        "pdn_connectivity_failure",
+        "default_bearer_failure"
+      ],
+      "related_procedures": [
+        "PDN Connectivity",
+        "Attach"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check PGW response",
+        "Check APN profile",
+        "Check bearer establishment"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "GTP_CAUSE_64",
+      "protocol": "GTPv2-C",
+      "code": 64,
+      "name": "Context Not Found",
+      "spec": "TS 29.274",
+      "release": "11",
+      "possible_domains": ["Core"],
+      "related_taxonomy": [
+        "mme_context_loss",
+        "sgw_context_loss"
+      ],
+      "related_procedures": [
+        "Modify Bearer",
+        "Delete Session",
+        "Service Request"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check SGW/MME restart",
+        "Check context synchronization",
+        "Check stale bearer handling"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "GTP_CAUSE_72",
+      "protocol": "GTPv2-C",
+      "code": 72,
+      "name": "System failure",
+      "spec": "TS 29.274",
+      "release": "11",
+      "possible_domains": ["Core"],
+      "related_taxonomy": [
+        "mme_internal_failure",
+        "sgw_failure",
+        "pgw_failure"
+      ],
+      "related_procedures": [
+        "Create Session",
+        "Modify Bearer"
+      ],
+      "severity_default": "Critical",
+      "recommended_actions": [
+        "Check EPC node health",
+        "Check CPU/memory",
+        "Check internal process failures"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "GTP_CAUSE_73",
+      "protocol": "GTPv2-C",
+      "code": 73,
+      "name": "No resources available",
+      "spec": "TS 29.274",
+      "release": "11",
+      "possible_domains": ["Core"],
+      "related_taxonomy": [
+        "resource_exhaustion",
+        "overload"
+      ],
+      "related_procedures": [
+        "Create Session",
+        "Bearer Setup"
+      ],
+      "severity_default": "Critical",
+      "recommended_actions": [
+        "Check EPC overload",
+        "Check bearer resource usage",
+        "Check memory exhaustion"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "GTP_CAUSE_87",
+      "protocol": "GTPv2-C",
+      "code": 87,
+      "name": "UE not responding",
+      "spec": "TS 29.274",
+      "release": "11",
+      "possible_domains": ["UE", "Access"],
+      "related_taxonomy": [
+        "radio_link_failure",
+        "ue_instability"
+      ],
+      "related_procedures": [
+        "Paging",
+        "Service Request"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check paging success ratio",
+        "Check UE reachability",
+        "Check RF condition"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "DIAMETER_5001",
+      "protocol": "Diameter",
+      "code": 5001,
+      "name": "DIAMETER_AVP_UNSUPPORTED",
+      "spec": "TS 29.272",
+      "release": "11",
+      "possible_domains": ["Core", "Configuration"],
+      "related_taxonomy": [
+        "diameter_interworking_failure"
+      ],
+      "related_procedures": [
+        "Authentication",
+        "Update Location"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check Diameter compatibility",
+        "Check AVP version support",
+        "Check HSS/MME interoperability"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "DIAMETER_5004",
+      "protocol": "Diameter",
+      "code": 5004,
+      "name": "DIAMETER_INVALID_AVP_VALUE",
+      "spec": "TS 29.272",
+      "release": "11",
+      "possible_domains": ["Core", "Configuration"],
+      "related_taxonomy": [
+        "diameter_configuration_error"
+      ],
+      "related_procedures": [
+        "Authentication",
+        "Update Location"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check AVP values",
+        "Check Diameter schema",
+        "Check vendor interoperability"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "S1AP_RADIO_NETWORK",
+      "protocol": "S1AP",
+      "code": 0,
+      "name": "Radio Network Layer Cause",
+      "spec": "TS 36.413",
+      "release": "11",
+      "possible_domains": ["Access", "RF"],
+      "related_taxonomy": [
+        "radio_failure",
+        "handover_failure"
+      ],
+      "related_procedures": [
+        "Initial Context Setup",
+        "Handover",
+        "Paging"
+      ],
+      "severity_default": "Major",
+      "recommended_actions": [
+        "Check eNB alarms",
+        "Check RF KPIs",
+        "Check handover statistics"
+      ],
+      "review_status": "reviewed"
+    },
+
+    {
+      "id": "S1AP_TRANSPORT",
+      "protocol": "S1AP",
+      "code": 1,
+      "name": "Transport Layer Cause",
+      "spec": "TS 36.413",
+      "release": "11",
+      "possible_domains": ["Transport"],
+      "related_taxonomy": [
+        "s1_transport_failure"
+      ],
+      "related_procedures": [
+        "S1 Setup",
+        "Initial UE Message"
+      ],
+      "severity_default": "Critical",
+      "recommended_actions": [
+        "Check SCTP status",
+        "Check IP transport",
+        "Check S1 interface connectivity"
+      ],
+      "review_status": "reviewed"
+    }
+
+  ]
+}

@@ -1,0 +1,97 @@
+@startuml reasoning-architecture
+
+title ReasonDock Deterministic Reasoning Architecture
+
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName "Malgun Gothic"
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #F9A825
+
+skinparam package {
+  BackgroundColor #EEF2FF
+  BorderColor #7986CB
+}
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #9E9E9E
+}
+
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #43A047
+}
+
+skinparam cloud {
+  BackgroundColor #FFF3E0
+  BorderColor #FB8C00
+}
+
+' Input
+rectangle "Raw XDR / Log Data" as INPUT #E3F2FD
+
+' RCA Engine block
+package "RCA Engine  (Deterministic)" as ENGINE {
+
+  rectangle "Semantic Layer\n\n raw field → meaning event\n cause code → named event\n interface → protocol\n call_type → procedure name" as SEM #E8EAF6
+
+  rectangle "Procedure Layer\n\n call flow context\n Attach / TAU / Service / Paging\n procedure-aware correlation" as PROC #E8EAF6
+
+  rectangle "Causal Layer\n\n Root Cause 분리\n Propagation 분리\n Cleanup Signal 분리" as CAUS #E8EAF6
+
+  rectangle "Confidence Layer\n\n confirmed\n suspected\n weak_hypothesis" as CONF #E8EAF6
+
+  rectangle "Evidence Organization\n\n Evidence Graph 구조화\n source_field / protocol / message\n evidence_strength / semantic_role" as EVID #E8EAF6
+
+  rectangle "Action Recommendation\n\n cause_dictionary lookup\n action_dictionary mapping\n deterministic 운영 가이드 생성" as ACT #E8EAF6
+
+}
+
+' Structured RCA Result
+database "Structured RCA Result (JSON)\n\n status / severity / incident_classification\n primary_cause + confidence\n evidence + counter_evidence\n blast_radius + root_cause_tree\n recommended_actions + uncertainty" as RCA_JSON
+
+' LLM layer
+cloud "LLM  (Explainability Layer only)\n\n structured RCA result 수신\n 자연어 설명 생성\n 운영자 친화적 보고서\n 요약 및 강조 표현" as LLM
+
+' Final output
+rectangle "운영자 응답\n\n Markdown 보고서\n Chat 메시지\n 운영 가이드" as OUTPUT #FFF8E1
+
+' Connections - vertical flow
+INPUT -down-> SEM
+SEM -down-> PROC
+PROC -down-> CAUS
+CAUS -down-> CONF
+CONF -down-> EVID
+EVID -down-> ACT
+ACT -down-> RCA_JSON
+RCA_JSON -down-> LLM
+LLM -down-> OUTPUT
+
+' Annotations
+note right of SEM
+  예: first_error_cause=19
+  → Authentication Reject
+  (S6a Diameter)
+end note
+
+note right of CAUS
+  구분:
+  Root Cause vs
+  Cleanup Signal
+  (UE Context Release는
+  원인이 아니다)
+end note
+
+note right of CONF
+  confirmed: 명시적 reject
+  suspected: 정황 증거
+  weak: 가설 수준
+end note
+
+note right of LLM
+  LLM은 판단하지 않는다.
+  LLM은 설명한다.
+end note
+
+@enduml

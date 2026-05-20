@@ -1,7 +1,7 @@
-# chat_demo → RCA 통합 시스템 설계 문서
+# ReasonDock RCA 통합 시스템 설계 문서
 
 작성 기준: reasondock 코드 분석 + XDR Spec(LTE-Call-KPI) 기반
-최종 수정: 2026-05-16
+최종 수정: 2026-05-20
 
 ---
 
@@ -136,7 +136,7 @@ services:
     build: ./backend
     ports: ["8000:8000"]
     environment:
-      DATABASE_URL: mysql+aiomysql://root:PASSWORD@mysql:3306/chat_demo
+      DATABASE_URL: mysql+aiomysql://root:PASSWORD@mysql:3306/reasondock
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

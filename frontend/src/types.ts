@@ -19,6 +19,27 @@ export interface PromptMetrics {
   dropped_context_count?: number | null;
   intent?: string | null;
   topic_relation?: string | null;
+  rca_processing?: RcaProcessingMetrics | null;
+}
+
+export interface RcaProcessingMetrics {
+  input_xdr_bytes?: number | null;
+  structured_summary_json_bytes?: number | null;
+  final_result_json_bytes?: number | null;
+  result_file_bytes?: number | null;
+  xdr_to_summary_ratio?: number | null;
+  xdr_to_final_json_ratio?: number | null;
+  estimated_reduction_ratio?: number | null;
+  final_reduction_ratio?: number | null;
+  total_engine_ms?: number | null;
+  llm_first_token_ms?: number | null;
+  llm_total_latency_ms?: number | null;
+  records_per_second?: number | null;
+  parsed_records?: number | null;
+  skipped_records?: number | null;
+  upload_file_deleted?: boolean | null;
+  upload_file_delete_error?: string | null;
+  stage_ms?: Record<string, number>;
 }
 
 export interface Message {

@@ -1,4 +1,4 @@
-# Ollama Chat Demo 시스템 구성 현황 및 기능 명세서
+# ReasonDock 시스템 구성 현황 및 기능 명세서
 
 ## 문서 목록
 
@@ -10,6 +10,18 @@
 | 04 | 인터페이스 정의 | [04_인터페이스_정의.md](04_인터페이스_정의.md) | REST API, SSE 스트리밍, 외부 연동 스펙 |
 | 05 | 데이터베이스 설계 | [05_데이터베이스_설계.md](05_데이터베이스_설계.md) | 테이블 구조, 관계, ORM 모델 매핑 |
 | 06 | 프론트엔드 API 스펙 | [06_프론트엔드_API_스펙.md](06_프론트엔드_API_스펙.md) | 프론트엔드 컴포넌트별 Backend API 호출 상세 |
+| 07 | Deterministic Reasoning Architecture | [07_Deterministic_Reasoning_Architecture.md](07_Deterministic_Reasoning_Architecture.md) | RCA 설계 철학, Reasoning 계층 구조, LLM Explainability 구조, 향후 방향성 |
+
+## 설계 문서
+
+| 문서 | 파일명 | 설명 |
+|------|--------|------|
+| RCA 통합 설계 | [RCA_DESIGN.md](RCA_DESIGN.md) | AS-IS → TO-BE 구조, 모듈 책임 분리, DB/API 스펙, 구현 단계 |
+| Reasoning 아키텍처 | [07_Deterministic_Reasoning_Architecture.md](07_Deterministic_Reasoning_Architecture.md) | RCA Engine 설계 철학, LLM 역할 정의, Reasoning 계층 상세 |
+
+> **참고**: RCA_DESIGN.md는 구현 관점의 설계 문서(모듈 구조, API, DB)이고,  
+> 07_Deterministic_Reasoning_Architecture.md는 추론 철학 및 아키텍처 방향 문서다.  
+> 두 문서는 상호 보완 관계이며, RCA 시스템을 이해하려면 두 문서를 함께 읽는 것을 권장한다.
 
 ## 다이어그램 (PlantUML)
 
@@ -19,6 +31,7 @@
 | 채팅 처리 흐름 | [network-flow.puml](diagrams/network-flow.puml) | 채팅 요청의 전체 처리 흐름 시퀀스 다이어그램 |
 | DB ERD | [db-erd.puml](diagrams/db-erd.puml) | 데이터베이스 엔티티 관계 다이어그램 |
 | RAG 파이프라인 | [rag-pipeline-flow.puml](diagrams/rag-pipeline-flow.puml) | 2-Stage RAG 파이프라인 활동 다이어그램 |
+| Reasoning 아키텍처 | [reasoning-architecture.puml](diagrams/reasoning-architecture.puml) | RCA Deterministic Reasoning 계층 구조 다이어그램 |
 
 ## PlantUML 렌더링
 

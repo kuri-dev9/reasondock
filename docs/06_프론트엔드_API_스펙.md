@@ -64,9 +64,9 @@ App.tsx → loadConversations() → fetchConversations()
 
 ```
 App.tsx → handleCreateConversation() → createConversation()
-App.tsx → handleSend() → createConversation()   (대화 없을 때 자동 생성)
-App.tsx → handleFileUpload() → createConversation()   (대화 없을 때 자동 생성)
-App.tsx → handleSystemPromptSave() → createConversation()   (대화 없을 때 자동 생성)
+App.tsx → handleSend() → createConversation()           (대화 없을 때 자동 생성)
+App.tsx → handleFileUpload() → createConversation()     (대화 없을 때 자동 생성)
+App.tsx → handleSystemPromptSave() → createConversation() (대화 없을 때 자동 생성)
 ```
 
 | 항목 | 값 |
@@ -178,7 +178,7 @@ App.tsx → handleImport() → importConversation()
 ## 6.3 채팅 (App.tsx + ChatInput.tsx + ChatMessage.tsx)
 
 > **React:** `App.tsx`, `ChatInput.tsx`, `ChatMessage.tsx`
-> **Backend:** `routes/chat.py`
+> **Backend:** `routes/chat.py` → `services/llm.py`
 
 ### 6.3.1 채팅 메시지 전송 (SSE 스트리밍)
 
@@ -243,10 +243,6 @@ App.tsx → handleFileUpload() → uploadAttachment()
 
 ### 6.4.2 첨부파일 목록 조회
 
-```
-App.tsx → loadAttachments() → fetchAttachments()
-```
-
 | 항목 | 값 |
 |------|-----|
 | Method | GET |
@@ -256,11 +252,6 @@ App.tsx → loadAttachments() → fetchAttachments()
 ---
 
 ### 6.4.3 첨부파일 삭제
-
-```
-ChatInput.tsx → attachment-remove 버튼 클릭
-App.tsx → handleFileRemove() → deleteAttachment()
-```
 
 | 항목 | 값 |
 |------|-----|
@@ -277,10 +268,6 @@ App.tsx → handleFileRemove() → deleteAttachment()
 
 ### 6.5.1 모델 목록 조회
 
-```
-App.tsx → loadModels() → fetchModels()
-```
-
 | 항목 | 값 |
 |------|-----|
 | Method | GET |
@@ -291,11 +278,6 @@ App.tsx → loadModels() → fetchModels()
 ---
 
 ### 6.5.2 모델 변경
-
-```
-ModelSelector.tsx → onChange
-App.tsx → handleModelChange() → updateConversation({ model })
-```
 
 | 항목 | 값 |
 |------|-----|
@@ -313,10 +295,6 @@ App.tsx → handleModelChange() → updateConversation({ model })
 
 ### 6.6.1 지식 문서 목록 조회
 
-```
-KnowledgePanel.tsx → loadDocs() → fetchKnowledgeDocs()
-```
-
 | 항목 | 값 |
 |------|-----|
 | Method | GET |
@@ -326,10 +304,6 @@ KnowledgePanel.tsx → loadDocs() → fetchKnowledgeDocs()
 ---
 
 ### 6.6.2 지식 문서 업로드
-
-```
-KnowledgePanel.tsx → handleUpload() → uploadKnowledgeDoc()
-```
 
 | 항목 | 값 |
 |------|-----|
@@ -342,12 +316,6 @@ KnowledgePanel.tsx → handleUpload() → uploadKnowledgeDoc()
 
 ### 6.6.3 문서 처리 상태 폴링
 
-```
-KnowledgePanel.tsx → useEffect (3초 간격 setInterval)
-  → processing 상태 문서 대상
-  → fetchKnowledgeDocStatus()
-```
-
 | 항목 | 값 |
 |------|-----|
 | Method | GET |
@@ -358,10 +326,6 @@ KnowledgePanel.tsx → useEffect (3초 간격 setInterval)
 ---
 
 ### 6.6.4 지식 문서 삭제
-
-```
-KnowledgePanel.tsx → handleDelete() → deleteKnowledgeDoc()
-```
 
 | 항목 | 값 |
 |------|-----|
@@ -393,12 +357,65 @@ App.tsx → handleSystemPromptSave()
 | Body | `{ system_prompt: "프롬프트 내용" }` |
 | 특이사항 | 빈 문자열은 서버에서 null로 변환하여 저장 |
 
-### 프롬프트 로딩
+---
+
+## 6.8 RCA 분석 (App.tsx + ChatInput.tsx)
+
+> **React:** `App.tsx`, `ChatInput.tsx`
+> **Backend:** `routes/rca.py` → `rca/pipeline.py` → `services/llm.py`
+
+### 6.8.1 RCA 분석 요청
 
 ```
-App.tsx → handleSelectConversation()
-  → fetchConversation(id)
-  → data.system_prompt → setCurrentSystemPrompt()
+ChatInput.tsx → xDR 파일 선택 → onRcaUpload()
+App.tsx → handleRcaUpload() → uploadRcaFile()
 ```
 
-대화 전환 시 서버에서 system_prompt를 로드하여 UI 상태를 동기화합니다.
+| 항목 | 값 |
+|------|-----|
+| Method | POST |
+| Path | `/api/rca/jobs` |
+| Body | FormData (`conversation_id`, `use_uce`, `file: .dat`) |
+| 응답 | RcaAnalyzeResponse JSON (200) |
+| 특이사항 | 대화가 없으면 자동 생성 후 업로드 |
+
+---
+
+### 6.8.2 RCA Job 진행 스트림
+
+```
+App.tsx → handleRcaUpload()
+  → uploadRcaFile()
+  → streamRcaJob()
+  → EventSource(/api/rca/jobs/{job_id}/stream)
+```
+
+| 항목 | 값 |
+|------|-----|
+| Method | GET |
+| Path | `/api/rca/jobs/{job_id}/stream` |
+| 방식 | Server-Sent Events |
+| 주요 이벤트 | queued, parsing, aggregating, summary_token, llm_prepare, llm_token, done, error |
+| 종료 조건 | step이 done 또는 error |
+
+---
+
+### 6.8.3 RCA Job/결과 조회
+
+```
+App.tsx는 진행/결과 표시를 SSE done 이벤트의 message로 처리합니다.
+필요 시 별도 조회 API로 Job 상태나 summary_json을 가져올 수 있습니다.
+```
+
+| 항목 | 값 |
+|------|-----|
+| Method | GET |
+| Path | `/api/rca/jobs/{job_id}` |
+| 응답 | RcaJob JSON |
+
+| 항목 | 값 |
+|------|-----|
+| Method | GET |
+| Path | `/api/rca/results/{job_id}` |
+| 응답 | summary_json |
+| 후처리 | 현재 App.tsx의 기본 흐름에서는 SSE done 이벤트의 message를 conversation에 표시 |

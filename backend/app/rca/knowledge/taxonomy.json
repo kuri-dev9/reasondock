@@ -1,0 +1,489 @@
+{
+  "version": "v1",
+  "description": "LTE/XDR RCA retrieval-oriented taxonomy for proj_lte_rca",
+
+  "domains": {
+
+    "UE": {
+
+      "authentication_failure": {
+        "description": "USIM, AKA, authentication, or subscriber validation failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Attach",
+          "Authentication",
+          "TAU"
+        ],
+        "related_protocols": [
+          "NAS-EMM",
+          "Diameter-S6a"
+        ],
+        "possible_cause_codes": [
+          "EMM_CAUSE_2",
+          "EMM_CAUSE_3",
+          "DIAMETER_5001"
+        ],
+        "example_symptoms": [
+          "auth_attempt_flag=1",
+          "auth_success_flag=0",
+          "Attach Reject",
+          "Authentication Failure"
+        ]
+      },
+
+      "device_instability": {
+        "description": "Repeated attach/detach or unstable UE behavior",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Attach",
+          "Detach",
+          "TAU"
+        ],
+        "related_protocols": [
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "call_type=Multiple",
+          "Repeated Attach/Detach",
+          "short call duration",
+          "success_flag=0"
+        ]
+      },
+
+      "capability_mismatch": {
+        "description": "UE capability mismatch or unsupported feature negotiation",
+        "severity_default": "Minor",
+        "related_procedures": [
+          "Attach",
+          "Bearer Setup"
+        ],
+        "related_protocols": [
+          "NAS-EMM",
+          "S1AP"
+        ],
+        "possible_cause_codes": [
+          "EMM_CAUSE_28"
+        ],
+        "example_symptoms": [
+          "Attach Reject",
+          "unsupported capability",
+          "ESM negotiation failure"
+        ]
+      }
+    },
+
+    "Access": {
+
+      "paging_reachability_failure": {
+        "description": "UE paging delivery or idle reachability failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Paging",
+          "Service Request"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [
+          "GTP_CAUSE_87"
+        ],
+        "example_symptoms": [
+          "paging retry exhausted",
+          "paging_success_flag=0",
+          "UE not responding",
+          "no Service Request after paging"
+        ]
+      },
+
+      "idle_reachability_failure": {
+        "description": "UE idle reachability restoration or service resume failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Paging",
+          "Service Request",
+          "TAU"
+        ],
+        "related_protocols": [
+          "NAS-EMM",
+          "S1AP"
+        ],
+        "possible_cause_codes": [
+          "EMM_CAUSE_10"
+        ],
+        "example_symptoms": [
+          "implicitly detached",
+          "repeated paging",
+          "idle UE unreachable",
+          "service restoration failure"
+        ]
+      },
+
+      "radio_link_failure": {
+        "description": "RRC or radio link failure causing signaling instability",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Handover",
+          "Service Request",
+          "TAU"
+        ],
+        "related_protocols": [
+          "RRC",
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Radio Link Failure",
+          "RRC re-establishment",
+          "frequent handover retry",
+          "radio connection lost"
+        ]
+      },
+
+      "handover_failure": {
+        "description": "S1/X2 handover failure or mobility failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Handover"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "RRC"
+        ],
+        "possible_cause_codes": [
+          "S1AP_HANDOVER_FAILURE"
+        ],
+        "example_symptoms": [
+          "handover failure",
+          "RRC re-establishment",
+          "eNB change failure"
+        ]
+      },
+
+      "nas_delivery_failure": {
+        "description": "NAS transport or NAS delivery failure over S1AP",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Attach",
+          "Service Request",
+          "Paging"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "NAS Non Delivery",
+          "Downlink NAS transport failure",
+          "uplink NAS retransmission",
+          "missing NAS response"
+        ]
+      },
+
+      "initial_context_setup_failure": {
+        "description": "Initial Context Setup failure during UE service establishment",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Attach",
+          "Service Request",
+          "Initial Context Setup"
+        ],
+        "related_protocols": [
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Initial Context Setup Failure",
+          "E-RAB setup rejected",
+          "UE Context Release after ICS"
+        ]
+      },
+
+      "erab_admission_failure": {
+        "description": "E-RAB admission or bearer setup failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "E-RAB Setup",
+          "Initial Context Setup",
+          "Bearer Setup"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "GTPv2-C"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "E-RAB Setup Failure",
+          "bearer admission reject",
+          "QCI allocation failure",
+          "radio bearer setup failure"
+        ]
+      },
+
+      "s1_transport_failure": {
+        "description": "Transport delivery failure between eNB and MME over S1",
+        "severity_default": "Critical",
+        "related_procedures": [
+          "Paging",
+          "Initial Context Setup",
+          "UE Context Release"
+        ],
+        "related_protocols": [
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "S1 retransmission",
+          "SCTP instability",
+          "S1 Setup retry",
+          "transport delivery timeout"
+        ]
+      },
+
+      "ue_context_release_abnormal": {
+        "description": "Unexpected or abnormal UE Context Release signaling",
+        "severity_default": "Minor",
+        "related_procedures": [
+          "UE Context Release"
+        ],
+        "related_protocols": [
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "unexpected UE Context Release",
+          "release after paging failure",
+          "release after ICS failure",
+          "abnormal release propagation"
+        ]
+      }
+    },
+
+    "Core": {
+
+      "security_mode_failure": {
+        "description": "Security Mode Command or NAS security activation failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Security Mode Control",
+          "Attach",
+          "TAU"
+        ],
+        "related_protocols": [
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [
+          "EMM_CAUSE_20"
+        ],
+        "example_symptoms": [
+          "Security Mode Reject",
+          "security context mismatch",
+          "NAS MAC failure",
+          "security activation timeout"
+        ]
+      },
+
+      "bearer_context_mismatch": {
+        "description": "Mismatch or stale state between MME, SGW, and bearer context",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Service Request",
+          "Create Session",
+          "Modify Bearer",
+          "Release Access Bearers"
+        ],
+        "related_protocols": [
+          "GTPv2-C",
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [
+          "GTP_CAUSE_64"
+        ],
+        "example_symptoms": [
+          "Context Not Found",
+          "stale bearer context",
+          "unexpected Release Access Bearers",
+          "Modify Bearer failure"
+        ]
+      },
+
+      "gtpc_signaling_failure": {
+        "description": "GTPv2-C signaling or session management failure",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Create Session",
+          "Modify Bearer",
+          "Delete Session"
+        ],
+        "related_protocols": [
+          "GTPv2-C"
+        ],
+        "possible_cause_codes": [
+          "GTP_CAUSE_64",
+          "GTP_CAUSE_73"
+        ],
+        "example_symptoms": [
+          "Create Session failure",
+          "Modify Bearer failure",
+          "Delete Session abnormal"
+        ]
+      },
+
+      "diameter_failure": {
+        "description": "Diameter authentication or subscriber data retrieval failure",
+        "severity_default": "Critical",
+        "related_procedures": [
+          "Authentication",
+          "Attach"
+        ],
+        "related_protocols": [
+          "Diameter-S6a"
+        ],
+        "possible_cause_codes": [
+          "DIAMETER_5001",
+          "DIAMETER_5004"
+        ],
+        "example_symptoms": [
+          "Authentication reject",
+          "subscriber unknown",
+          "ULA timeout"
+        ]
+      },
+
+      "signaling_timeout_unresolved": {
+        "description": "Timeout observed but root signaling failure not yet isolated",
+        "severity_default": "Warning",
+        "related_procedures": [
+          "Attach",
+          "TAU",
+          "Service Request"
+        ],
+        "related_protocols": [
+          "NAS-EMM",
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Attach timeout",
+          "retransmission increase",
+          "control plane delay",
+          "signaling timeout"
+        ]
+      },
+
+      "overload_propagation": {
+        "description": "MME, S1, or EPC overload propagation affecting signaling procedures",
+        "severity_default": "Critical",
+        "related_procedures": [
+          "Attach",
+          "Paging",
+          "Service Request"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Overload Start",
+          "mass retransmission",
+          "Attach storm",
+          "paging delay increase"
+        ]
+      },
+
+      "cleanup_signaling": {
+        "description": "Cleanup or recovery signaling observed after primary failure propagation",
+        "severity_default": "Info",
+        "related_procedures": [
+          "Detach",
+          "Delete Session",
+          "Release Access Bearers",
+          "UE Context Release"
+        ],
+        "related_protocols": [
+          "S1AP",
+          "GTPv2-C",
+          "NAS-EMM"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Delete Session after failure",
+          "Release Access Bearers",
+          "cleanup detach",
+          "UE Context Release Complete"
+        ]
+      },
+
+      "session_cleanup_propagation": {
+        "description": "Session cleanup propagation after bearer or UE context inconsistency",
+        "severity_default": "Minor",
+        "related_procedures": [
+          "Delete Session",
+          "Release Access Bearers",
+          "Detach"
+        ],
+        "related_protocols": [
+          "GTPv2-C",
+          "S1AP"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "Delete Session Request",
+          "unexpected bearer cleanup",
+          "late cleanup signaling"
+        ]
+      }
+    },
+
+    "Configuration": {
+
+      "apn_mismatch": {
+        "description": "APN configuration mismatch or invalid APN usage",
+        "severity_default": "Minor",
+        "related_procedures": [
+          "PDN Connectivity",
+          "Attach"
+        ],
+        "related_protocols": [
+          "NAS-ESM",
+          "GTPv2-C"
+        ],
+        "possible_cause_codes": [
+          "EMM_CAUSE_27",
+          "GTP_CAUSE_27"
+        ],
+        "example_symptoms": [
+          "PDN reject",
+          "default bearer failure",
+          "unknown APN"
+        ]
+      }
+    },
+
+    "Transport": {
+
+      "gtp_transport_instability": {
+        "description": "GTP transport instability or delayed EPC signaling delivery",
+        "severity_default": "Major",
+        "related_procedures": [
+          "Create Session",
+          "Modify Bearer",
+          "Delete Session"
+        ],
+        "related_protocols": [
+          "GTPv2-C"
+        ],
+        "possible_cause_codes": [],
+        "example_symptoms": [
+          "GTP retransmission",
+          "delayed Create Session Response",
+          "Modify Bearer timeout",
+          "Delete Session retry"
+        ]
+      }
+    }
+  }
+}

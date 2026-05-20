@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     uce_base_url: str = "http://uce:8080"
     uce_timeout_seconds: float = 15.0
     uce_debug_enabled: bool = False
+    rca_debug_enabled: bool = True
 
     class Config:
         env_file = ".env"

@@ -36,6 +36,7 @@ services:
       UCE_BASE_URL: ${UCE_BASE_URL:-http://uce:8080}
       UCE_TIMEOUT_SECONDS: ${UCE_TIMEOUT_SECONDS:-15}
       UCE_DEBUG_ENABLED: ${UCE_DEBUG_ENABLED:-true}
+      RCA_DEBUG_ENABLED: ${RCA_DEBUG_ENABLED:-true}
     extra_hosts:
       - "host-gateway:host-gateway"  # 호스트 IP 자동 해석
     ports:
@@ -67,6 +68,7 @@ services:
       context: ./frontend
       args:
         REACT_APP_UCE_DEBUG: ${REACT_APP_UCE_DEBUG:-false}
+        REACT_APP_RCA_DEBUG: ${REACT_APP_RCA_DEBUG:-true}
     container_name: chat_demo_frontend
     restart: unless-stopped
     ports:
