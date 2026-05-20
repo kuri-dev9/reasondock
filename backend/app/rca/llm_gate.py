@@ -29,19 +29,18 @@ def is_healthy(summary: dict[str, Any]) -> bool:
 
 
 def should_invoke_llm(summary: dict[str, Any]) -> tuple[bool, str]:
+    """LLM 호출 여부 결정.
+
+    정책:
+    - healthy (fail_rate=0%, drop_rate=0%, 이상 없음) → bypass
+    - 그 외 모든 실패/이상 케이스 → LLM 호출
+    """
     if is_healthy(summary):
         return False, "analysis_mode=healthy, fail_rate=0.0"
 
     primary = summary.get("primary_cause") or {}
-    tier = primary.get("confidence_tier")
+    tier = primary.get("confidence_tier", "unknown")
     score = float(summary.get("confidence_score") or 0.0)
+    fail_rate = summary.get("overall", {}).get("fail_rate", 0.0)
 
-    if tier == "confirmed" and score >= TIER_THRESHOLDS["confirmed"]:
-        return False, f"confidence_tier=confirmed, score={score:.2f}"
-
-    classification = summary.get("incident_classification", "")
-    actions = summary.get("recommended_actions", [])
-    if classification != "UNCLASSIFIED_FAILURE_PATTERN" and len(actions) >= 3:
-        return False, f"classification={classification}, actions available"
-
-    return True, f"tier={tier}, score={score:.2f}, invoke_reason=ambiguous_rca"
+    return True, f"tier={tier}, score={score:.2f}, fail_rate={fail_rate:.2%}, invoke_reason=non_healthy"
