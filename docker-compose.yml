@@ -38,7 +38,7 @@ services:
       UCE_DEBUG_ENABLED: ${UCE_DEBUG_ENABLED:-true}
       RCA_DEBUG_ENABLED: ${RCA_DEBUG_ENABLED:-true}
     extra_hosts:
-      - "host-gateway:host-gateway"  # 호스트 IP 자동 해석
+      - "host-gateway:172.72.0.1"  # 호스트 IP 자동 해석
     ports:
       - "8000:8000"
     volumes:
