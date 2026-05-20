@@ -22,3 +22,8 @@ frontend/build/
 
 # Knowledge base data
 backend/knowledge_data/
+
+# Test data
+data/LTE-CALL-KPI_R1_20260518_1000.dat
+data/LTE-CALL-KPI_R1_20260518_1100.dat
+data/generated_test_xdr/
