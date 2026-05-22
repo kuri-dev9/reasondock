@@ -26,19 +26,24 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: mysql+aiomysql://root:root@mysql:3306/chat_demo
-      OLLAMA_BASE_URL: http://host-gateway:11434  # 호스트의 Ollama
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-4o}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-anthropic/claude-sonnet-4-5}
-      DEFAULT_OLLAMA_MODEL: ${DEFAULT_OLLAMA_MODEL:-gemma4:26b}
+      DEFAULT_OLLAMA_MODEL: ${DEFAULT_OLLAMA_MODEL:-exaone3.5:7.8b}
       UCE_ENABLED: ${UCE_ENABLED:-true}
-      UCE_BASE_URL: ${UCE_BASE_URL:-http://uce:8080}
+      UCE_BASE_URL: ${UCE_BASE_URL:-http://uce:8100}
       UCE_TIMEOUT_SECONDS: ${UCE_TIMEOUT_SECONDS:-15}
       UCE_DEBUG_ENABLED: ${UCE_DEBUG_ENABLED:-true}
       RCA_DEBUG_ENABLED: ${RCA_DEBUG_ENABLED:-true}
+      DPE_ENABLED: ${DPE_ENABLED:-true}
+      DPE_BASE_URL: ${DPE_BASE_URL:-http://dpe:8200}
+      DPE_TIMEOUT_SECONDS: ${DPE_TIMEOUT_SECONDS:-600}
+      DPE_NORMALIZATION_ENABLED: ${DPE_NORMALIZATION_ENABLED:-true}
+      DPE_BACKEND_SELF_URL: ${DPE_BACKEND_SELF_URL:-http://backend:8000}
     extra_hosts:
-      - "host-gateway:172.72.0.1"  # 호스트 IP 자동 해석
+      - "host-gateway:host-gateway"  # Mac/Linux 공통 (Docker 20.10+)
     ports:
       - "8000:8000"
     volumes:
@@ -51,17 +56,32 @@ services:
       mysql:
         condition: service_healthy
 
+  dpe:
+    build:
+      context: ./dpe
+    container_name: dpe
+    restart: unless-stopped
+    environment:
+      PORT: 8200
+      DPE_NORMALIZATION_ENABLED: ${DPE_NORMALIZATION_ENABLED:-true}
+      DPE_NORMALIZATION_MIN_CONFIDENCE: ${DPE_NORMALIZATION_MIN_CONFIDENCE:-0.55}
+      DPE_NORMALIZATION_MAX_CHARS: ${DPE_NORMALIZATION_MAX_CHARS:-8000}
+      UCE_BASE_URL: ${UCE_BASE_URL:-http://uce:8100}
+      UCE_DENOISE_ENABLED: ${UCE_DENOISE_ENABLED:-true}
+    ports:
+      - "8200:8200"
+
   uce:
     build:
       context: ./uce
     container_name: uce
     restart: unless-stopped
     environment:
-      PORT: 8080
+      PORT: 8100
       LOG_LEVEL: ${UCE_LOG_LEVEL:-info}
       UCE_LOG_LEVEL: ${UCE_LOG_LEVEL:-INFO}
     ports:
-      - "18080:8080"
+      - "8100:8100"
 
   frontend:
     build:
@@ -69,6 +89,7 @@ services:
       args:
         REACT_APP_UCE_DEBUG: ${REACT_APP_UCE_DEBUG:-false}
         REACT_APP_RCA_DEBUG: ${REACT_APP_RCA_DEBUG:-true}
+        REACT_APP_CHAT_DEBUG: ${REACT_APP_CHAT_DEBUG:-true}
     container_name: chat_demo_frontend
     restart: unless-stopped
     ports:

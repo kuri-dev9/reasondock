@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models import Conversation, Attachment
 from app.file_parser import extract_text
+from app.services.dpe_client import call_dpe_process
 
 router = APIRouter(prefix="/api/conversations", tags=["attachments"])
 
@@ -27,15 +28,25 @@ async def upload_attachment(
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다")
 
+    filename = file.filename or "file.txt"
     try:
-        text = extract_text(file.filename or "file.txt", content)
+        text = extract_text(filename, content)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"파일을 읽을 수 없습니다: {str(e)}")
 
+    # DPE 통합: structure detection (첨부파일은 normalization 비활성화 — 동기 처리)
+    dpe_result = await call_dpe_process(
+        document_id=f"att_{conversation_id}_{filename}",
+        filename=filename,
+        content=text,
+        normalization_enabled=False,
+    )
+    final_text = dpe_result.normalized_content if dpe_result is not None else text
+
     attachment = Attachment(
         conversation_id=conversation_id,
-        filename=file.filename or "file.txt",
-        content_text=text,
+        filename=filename,
+        content_text=final_text,
         file_size=len(content),
     )
     db.add(attachment)

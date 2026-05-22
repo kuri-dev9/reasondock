@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import time
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,6 +18,7 @@ from app import vector_store
 from app.tokenizer import tokenize as _tokenize
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
+logger = logging.getLogger(__name__)
 
 
 TITLE_STOPWORDS = {
@@ -46,14 +48,114 @@ TITLE_STOPWORDS = {
     "with",
 }
 
+CONTINUATION_QUERY_MARKERS = {
+    "그건",
+    "그거",
+    "그럼",
+    "그러면",
+    "이건",
+    "이거",
+    "해당",
+    "관련",
+    "이후",
+    "결과",
+    "반응",
+    "과정",
+    "현황",
+    "입장",
+    "주장",
+    "내용",
+    "협상",
+}
+
+CONTINUATION_ENTITY_STOPWORDS = {
+    "알려줘",
+    "어때",
+    "뭐야",
+    "무엇",
+    "설명",
+    "과정",
+    "결과",
+    "반응",
+    "주장",
+    "내용",
+    "관련",
+    "소식",
+    "현황",
+    "협상",
+}
+
 
 def _estimate_prompt_tokens(messages: list[dict]) -> int:
     text = "\n".join(str(message.get("content", "")) for message in messages)
     return max(1, len(text) // 4) if text else 0
 
 
-def _legacy_metrics(messages: list[dict]) -> dict:
+def _context_debug_item(
+    *,
+    item_id: str,
+    source: str,
+    content: str,
+    score: float | None = None,
+    section: str | None = None,
+    status: str = "selected",
+    drop_reason: str | None = None,
+    reason: str | None = None,
+    score_breakdown: dict | None = None,
+    matched_terms: list[str] | None = None,
+) -> dict:
+    return {
+        "id": item_id,
+        "source": source,
+        "type": "legacy_context",
+        "status": status,
+        "section": section or source,
+        "score": score,
+        "preview": _debug_context_preview(content),
+        "full_content": (content or "").strip(),
+        "taxonomy": [],
+        "drop_reason": drop_reason,
+        "reason": reason,
+        "score_breakdown": score_breakdown or {},
+        "matched_terms": matched_terms or [],
+    }
+
+
+def _debug_context_preview(text: str, head: int = 700, tail: int = 300) -> str:
+    compact = " ".join((text or "").split())
+    if len(compact) <= head + tail + 3:
+        return compact
+    return f"{compact[:head]}...{compact[-tail:]}"
+
+
+def _content_type_from_dpe(dpe_metadata: dict | None) -> str:
+    if not dpe_metadata:
+        return "text"
+    if dpe_metadata.get("normalization_applied") or dpe_metadata.get("chunk_strategy") == "heading-aware":
+        return "markdown"
+    structure_type = dpe_metadata.get("structure_type", "")
+    if structure_type in {"code", "json", "yaml", "log"}:
+        return structure_type
+    return "text"
+
+
+def _build_legacy_final_prompt(messages: list[dict]) -> str:
+    parts = []
+    for msg in messages:
+        role = msg.get("role", "unknown").upper()
+        content = msg.get("content", "")
+        parts.append(f"[{role}]\n{content}")
+    return "\n\n---\n\n".join(parts)
+
+
+def _legacy_metrics(
+    messages: list[dict],
+    survived_items: list[dict] | None = None,
+    dropped_items: list[dict] | None = None,
+) -> dict:
     prompt_tokens = _estimate_prompt_tokens(messages)
+    survived_items = survived_items or []
+    dropped_items = dropped_items or []
     return {
         "use_uce": False,
         "fallback_used": False,
@@ -63,14 +165,39 @@ def _legacy_metrics(messages: list[dict]) -> dict:
         "build_context_latency_ms": 0,
         "llm_first_token_ms": None,
         "llm_total_latency_ms": None,
-        "selected_context_count": 0,
-        "dropped_context_count": 0,
+        "selected_context_count": len(survived_items),
+        "dropped_context_count": len(dropped_items),
+        "retrieval_confidence": _legacy_retrieval_confidence(survived_items),
+        "retrieval_warning": None if survived_items else "no_context_selected",
+        "survived_items": survived_items,
+        "dropped_items": dropped_items,
+        "query_type": None,
+        "compression_level": "legacy",
         "intent": None,
         "topic_relation": None,
+        "final_prompt": _build_legacy_final_prompt(messages),
     }
 
 
-def _uce_metrics(uce_result: uce_client.UceContextResult, fallback_used: bool = False) -> dict:
+def _legacy_retrieval_confidence(items: list[dict]) -> float:
+    scores = [
+        item.get("score")
+        for item in items[:3]
+        if isinstance(item.get("score"), (int, float))
+    ]
+    if not scores:
+        return 0.0
+    return round(sum(scores) / len(scores), 4)
+
+
+def _uce_metrics(
+    uce_result: uce_client.UceContextResult,
+    fallback_used: bool = False,
+    input_document_count: int = 0,
+    input_rag_chunk_count: int = 0,
+    input_rag_context_chars: int = 0,
+    uce_input_content_types: list[str] | None = None,
+) -> dict:
     metadata = uce_result.metadata
     prompt_pack = uce_result.prompt_pack
     return {
@@ -84,9 +211,70 @@ def _uce_metrics(uce_result: uce_client.UceContextResult, fallback_used: bool = 
         "llm_total_latency_ms": None,
         "selected_context_count": metadata.get("selected_context_count", 0),
         "dropped_context_count": metadata.get("dropped_context_count", 0),
+        "retrieval_confidence": metadata.get("retrieval_confidence"),
+        "retrieval_warning": metadata.get("retrieval_warning"),
+        "survived_items": metadata.get("survived_items", []),
+        "dropped_items": metadata.get("dropped_items", []),
+        "query_type": metadata.get("query_type"),
+        "original_query": metadata.get("original_query"),
+        "rewritten_query": metadata.get("rewritten_query"),
+        "query_rewrite_applied": metadata.get("query_rewrite_applied"),
+        "query_rewrite_reason": metadata.get("query_rewrite_reason"),
+        "compression_level": metadata.get("compression_level"),
         "intent": metadata.get("primary_intent"),
         "topic_relation": metadata.get("topic_relation"),
+        "conversation_state": uce_result.conversation_state,
+        "final_prompt": prompt_pack.get("content"),
+        "content_type": ", ".join(sorted(uce_input_content_types)) if uce_input_content_types else None,
+        "uce_input_document_count": input_document_count,
+        "uce_input_rag_chunk_count": input_rag_chunk_count,
+        "uce_input_rag_context_chars": input_rag_context_chars,
     }
+
+
+def _latest_uce_state(messages: list[Message]) -> dict | None:
+    for message in reversed(messages):
+        metrics = message.metrics if isinstance(message.metrics, dict) else {}
+        state = metrics.get("conversation_state")
+        if isinstance(state, dict):
+            return state
+    return None
+
+
+def _rewrite_knowledge_query_for_uce(query: str, previous_state: dict | None) -> tuple[str, bool]:
+    if not previous_state:
+        return query, False
+    active_topic = str(previous_state.get("active_topic") or "").strip()
+    topic_confidence = float(previous_state.get("topic_confidence") or 0.0)
+    if not active_topic or topic_confidence < 0.55:
+        return query, False
+
+    query_tokens = _tokenize(query)
+    query_entities = _extract_continuation_entities(query)
+    marker_hit = any(marker in query for marker in CONTINUATION_QUERY_MARKERS)
+    if query_entities or len(query_tokens) > 5 or not marker_hit:
+        return query, False
+
+    prefix_parts = [active_topic]
+    for entity in previous_state.get("active_entities") or []:
+        entity = str(entity).strip()
+        if entity and entity not in " ".join(prefix_parts):
+            prefix_parts.append(entity)
+        if len(prefix_parts) >= 4:
+            break
+
+    rewritten = f"{' '.join(prefix_parts)} {query}".strip()
+    return rewritten, rewritten != query
+
+
+def _extract_continuation_entities(text: str) -> list[str]:
+    entities = []
+    for token in re.findall(r"[가-힣A-Za-z0-9][가-힣A-Za-z0-9_\-]{1,}", text or ""):
+        stripped = re.sub(r"(은|는|이|가|을|를|의|과|와|로|으로|에|에서|에게|한테|도|만)$", "", token)
+        if len(stripped) < 2 or stripped.isdigit() or stripped in CONTINUATION_ENTITY_STOPWORDS:
+            continue
+        entities.append(stripped)
+    return entities
 
 
 def _messages_from_uce_prompt(system_prompt: str | None, prompt_pack_content: str) -> list[dict]:
@@ -227,11 +415,22 @@ async def chat(
     db.add(user_message)
     await db.commit()
 
+    previous_uce_state = _latest_uce_state(list(conv.messages))
+    knowledge_query, backend_query_rewrite_applied = (
+        _rewrite_knowledge_query_for_uce(data.message, previous_uce_state)
+        if data.use_uce and settings.uce_enabled
+        else (data.message, False)
+    )
+
     messages = []
 
     # RAG: 문서 요약 기반 우선 검색 + 청크 검색
     rag_context = ""
     rag_references = []
+    results: list[dict] = []
+    all_results: list[dict] = []
+    priority_doc_ids: set = set()
+    doc_map: dict = {}
     try:
         # 1단계: 모든 지식 문서의 요약을 로드하여 질문과 유사도 비교
         doc_result = await db.execute(
@@ -248,12 +447,14 @@ async def chat(
                 {"doc_id": d.id, "filename": d.filename, "summary": d.summary}
                 for d in docs_with_summary
             ]
-            scored = _compute_summary_similarity(data.message, summaries)
+            scored = _compute_summary_similarity(knowledge_query, summaries)
             # 유사도 0.01 이상인 문서를 우선 문서로 선정
             priority_doc_ids = {s["doc_id"] for s in scored if s["similarity"] >= 0.01}
 
         # 2단계: 청크 검색 (기존 하이브리드 검색)
-        all_results = vector_store.search(query=data.message, n_results=10)
+        all_results = vector_store.search(query=knowledge_query, n_results=10)
+        if not all_results:
+            all_results = vector_store.fallback_search(query=knowledge_query, n_results=10)
 
         if all_results and priority_doc_ids:
             # 우선 문서의 청크를 앞에, 나머지를 뒤에 배치
@@ -299,7 +500,11 @@ async def chat(
                         "matched_summary": is_priority,
                     })
     except Exception:
-        pass
+        logger.exception(
+            "RAG retrieval failed: conv_id=%s query=%r",
+            conversation_id,
+            knowledge_query[:80],
+        )
 
     # 대화별 첨부파일 컨텍스트
     attachment_context = ""
@@ -329,29 +534,127 @@ async def chat(
         messages.append({"role": m.role, "content": m.content})
     messages.append({"role": "user", "content": data.message})
     legacy_messages = list(messages)
-    prompt_metrics = _legacy_metrics(legacy_messages)
+    legacy_survived_items = []
+    legacy_dropped_items = []
+    legacy_doc_map = doc_map
+
+    def _result_key(result: dict) -> tuple:
+        return (result.get("id"), result.get("doc_id"), result.get("content"))
+
+    def _result_source(result: dict, fallback: str) -> str:
+        doc_id = result.get("doc_id")
+        return str(legacy_doc_map.get(doc_id) or result.get("filename") or fallback)
+
+    for index, result in enumerate(results):
+        source = _result_source(result, "vector_store")
+        legacy_survived_items.append(
+            _context_debug_item(
+                item_id=str(result.get("id") or f"rag_chunk_{index + 1}"),
+                source=source,
+                section=source,
+                content=str(result.get("content") or ""),
+                score=result.get("score"),
+            )
+        )
+    selected_result_ids = {_result_key(result) for result in results}
+    for index, result in enumerate(all_results):
+        if _result_key(result) in selected_result_ids:
+            continue
+        source = _result_source(result, "vector_store")
+        legacy_dropped_items.append(
+            _context_debug_item(
+                item_id=str(result.get("id") or f"rag_dropped_{index + 1}"),
+                source=source,
+                section=source,
+                content=str(result.get("content") or ""),
+                score=result.get("score"),
+                status="dropped",
+                drop_reason="limit_exceeded",
+            )
+        )
+    for att in conv.attachments or []:
+        legacy_survived_items.append(
+            _context_debug_item(
+                item_id=f"attachment_{att.id}",
+                source="attachment",
+                section=att.filename,
+                content=att.content_text[:8000],
+                score=None,
+            )
+        )
+    prompt_metrics = _legacy_metrics(
+        legacy_messages,
+        survived_items=legacy_survived_items,
+        dropped_items=legacy_dropped_items,
+    )
 
     if data.use_uce and settings.uce_enabled:
         rag_chunks = []
-        for index, result in enumerate(results if "results" in locals() else []):
-            rag_chunks.append(
-                {
-                    "id": result.get("id") or f"rag_chunk_{index + 1}",
-                    "title": result.get("filename") or f"RAG Chunk {index + 1}",
-                    "content": result.get("content", ""),
-                    "source": result.get("filename") or "vector_store",
-                    "importance": 0.85 if result.get("doc_id") in (priority_doc_ids if "priority_doc_ids" in locals() else set()) else 0.7,
-                }
+
+        selected_doc_ids = list(priority_doc_ids) if priority_doc_ids else list(
+            set(r["doc_id"] for r in all_results)
+        )
+        if selected_doc_ids:
+            doc_full_result = await db.execute(
+                select(KnowledgeDocument).where(
+                    KnowledgeDocument.id.in_(selected_doc_ids),
+                    KnowledgeDocument.status == "ready",
+                )
             )
+            full_docs = doc_full_result.scalars().all()
+            for doc in full_docs:
+                # Active IR priority: user-edited > generated > vector_store original
+                full_text = (
+                    doc.uce_denoised_content
+                    or doc.normalized_content
+                    or vector_store.text_by_doc_id(doc.id)
+                )
+                if not full_text:
+                    continue
+                content_type = (
+                    "dpe_ir"
+                    if doc.uce_denoised_content or doc.normalized_content
+                    else _content_type_from_dpe(doc.dpe_metadata)
+                )
+                rag_chunks.append({
+                    "id": f"knowledge_doc_{doc.id}",
+                    "title": doc.filename,
+                    "content": full_text,
+                    "source": doc.filename,
+                    "importance": 0.85,
+                    "content_type": content_type,
+                })
+
+        logger.info(
+            "UCE call: conv_id=%s attachments=%d rag_results=%d selected_docs=%d",
+            conversation_id,
+            len(conv.attachments or []),
+            len(all_results),
+            len(selected_doc_ids),
+        )
         for index, att in enumerate(conv.attachments or []):
+            if not att.content_text:
+                continue
             rag_chunks.append(
                 {
                     "id": f"attachment_{att.id}",
                     "title": att.filename,
                     "content": att.content_text[:8000],
                     "source": "attachment",
-                    "importance": 0.8,
+                    "importance": 0.9,
                 }
+            )
+        logger.info(
+            "UCE rag_chunks detail: total=%d (from all_results=%d, attachments=%d)",
+            len(rag_chunks),
+            len(all_results),
+            len(conv.attachments or []),
+        )
+        if not rag_chunks:
+            logger.warning(
+                "UCE called with EMPTY rag_chunks: conv_id=%s all_results=%d",
+                conversation_id,
+                len(all_results),
             )
         try:
             uce_result = await uce_client.build_context(
@@ -360,16 +663,32 @@ async def chat(
                 recent_messages=list(conv.messages)[-15:],
                 rag_chunks=rag_chunks,
                 model=conv.model,
+                rag_context=rag_context,
+                previous_state=previous_uce_state,
             )
             messages = _messages_from_uce_prompt(conv.system_prompt, uce_result.prompt_pack["content"])
-            prompt_metrics = _uce_metrics(uce_result)
-        except Exception:
-            import logging
-
-            logging.getLogger(__name__).exception("UCE failed; falling back to legacy prompt flow")
+            prompt_metrics = _uce_metrics(
+                uce_result,
+                input_document_count=len(rag_chunks) + (1 if rag_context.strip() else 0),
+                input_rag_chunk_count=len(rag_chunks),
+                input_rag_context_chars=len(rag_context),
+                uce_input_content_types=list({c.get("content_type", "text") for c in rag_chunks}),
+            )
+            prompt_metrics["backend_retrieval_query"] = knowledge_query
+            prompt_metrics["backend_query_rewrite_applied"] = backend_query_rewrite_applied
+        except Exception as exc:
+            logger.exception("UCE failed; falling back to legacy prompt flow")
             messages = legacy_messages
-            prompt_metrics = _legacy_metrics(legacy_messages)
+            prompt_metrics = _legacy_metrics(
+                legacy_messages,
+                survived_items=legacy_survived_items,
+                dropped_items=legacy_dropped_items,
+            )
             prompt_metrics["fallback_used"] = True
+            prompt_metrics["final_prompt"] = _build_legacy_final_prompt(legacy_messages)
+            prompt_metrics["uce_fallback_reason"] = str(exc)
+            prompt_metrics["backend_retrieval_query"] = knowledge_query
+            prompt_metrics["backend_query_rewrite_applied"] = backend_query_rewrite_applied
 
     async def generate():
         full_response = ""
@@ -393,6 +712,9 @@ async def chat(
 
         if full_response.strip():
             metrics["llm_total_latency_ms"] = int((time.perf_counter() - stream_started) * 1000)
+            metrics["model"] = conv.model
+            metrics["response_tokens"] = len(full_response.split())
+            metrics["response_chars"] = len(full_response)
             assistant_message = Message(
                 conversation_id=conversation_id, role="assistant", content=full_response,
                 references=rag_references if rag_references else None,

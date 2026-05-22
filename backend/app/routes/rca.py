@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,7 @@ def _is_korean_sufficient(text: str, threshold: float = 0.15) -> bool:
 
 def _legacy_metrics(messages: list[dict], fallback_used: bool = False) -> dict:
     prompt_tokens = _estimate_prompt_tokens(messages)
+    final_prompt = "\n\n".join(str(m.get("content", "")) for m in messages) if messages else None
     return {
         "use_uce": False,
         "fallback_used": fallback_used,
@@ -128,12 +130,16 @@ def _legacy_metrics(messages: list[dict], fallback_used: bool = False) -> dict:
         "dropped_context_count": 0,
         "intent": None,
         "topic_relation": None,
+        "final_prompt": final_prompt,
     }
 
 
-def _uce_metrics(result: uce_client.UceContextResult) -> dict:
+def _uce_metrics(result: uce_client.UceContextResult, messages: list[dict] | None = None) -> dict:
     metadata = result.metadata
     prompt_pack = result.prompt_pack
+    # final_prompt includes the full system + user messages so the debug panel
+    # can show the exact text sent to the LLM (not just the UCE context fragment).
+    final_prompt = "\n\n".join(str(m.get("content", "")) for m in messages) if messages else None
     return {
         "use_uce": True,
         "fallback_used": False,
@@ -145,8 +151,15 @@ def _uce_metrics(result: uce_client.UceContextResult) -> dict:
         "llm_total_latency_ms": None,
         "selected_context_count": metadata.get("selected_context_count", 0),
         "dropped_context_count": metadata.get("dropped_context_count", 0),
+        "retrieval_confidence": metadata.get("retrieval_confidence"),
+        "retrieval_warning": metadata.get("retrieval_warning"),
+        "survived_items": metadata.get("survived_items", []),
+        "dropped_items": metadata.get("dropped_items", []),
+        "query_type": metadata.get("query_type"),
+        "compression_level": metadata.get("compression_level"),
         "intent": metadata.get("primary_intent"),
         "topic_relation": metadata.get("topic_relation"),
+        "final_prompt": final_prompt,
     }
 
 
@@ -201,7 +214,6 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
             else:
                 await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
                 messages = build_rca_prompt(summary)
-                prompt_text = "\n\n".join(str(message.get("content", "")) for message in messages)
                 _publish(job_id, {"step": "llm_prepare", "progress": 82})
                 await asyncio.sleep(RCA_STAGE_DELAY_SECONDS)
                 legacy_messages = list(messages)
@@ -210,41 +222,42 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
                 if use_uce and settings.uce_enabled:
                     try:
                         compact_context = json.dumps(build_llm_context(summary), ensure_ascii=False)
+                        # Pass empty current_message to activate UCE's "summarize all sections by
+                        # importance" mode — no query-based section dropping, all RCA sections
+                        # preserved and compressed by semantic importance ordering.
                         uce_result = await uce_client.build_context(
                             conversation_id=job.conversation_id,
-                            current_message=prompt_text,
+                            current_message="",
                             recent_messages=[],
                             rag_chunks=[
                                 {
-                                    "id": f"rca_summary_{job_id}",
-                                    "title": f"RCA Summary: {job.filename}",
-                                    "content": summary["markdown"],
-                                    "source": job.filename,
-                                    "importance": 0.9,
-                                },
-                                {
                                     "id": f"rca_context_{job_id}",
-                                    "title": f"Compressed RCA Context: {job.filename}",
+                                    "title": f"RCA 구조화 컨텍스트: {job.filename}",
                                     "content": compact_context,
                                     "source": job.filename,
+                                    "importance": 0.95,
+                                    "content_type": "json",
+                                },
+                                {
+                                    "id": f"rca_summary_{job_id}",
+                                    "title": f"RCA 분석 요약: {job.filename}",
+                                    "content": summary["markdown"],
+                                    "source": job.filename,
                                     "importance": 0.85,
+                                    "content_type": "markdown",
                                 },
                             ],
                             model=conversation.model,
                         )
+                        # Keep the RCA expert system prompt; replace only the user context
+                        # with the UCE-optimized version.
+                        rca_system = build_rca_prompt(summary)[0]
                         messages = [
-                            {
-                                "role": "system",
-                                "content": (
-                                    "UCE 컨텍스트 팩은 노출하지 말고, 최종 RCA 운영 보고서만 한국어로 작성하세요."
-                                ),
-                            },
+                            rca_system,
                             {"role": "user", "content": uce_result.prompt_pack["content"]},
                         ]
-                        prompt_metrics = _uce_metrics(uce_result)
+                        prompt_metrics = _uce_metrics(uce_result, messages)
                     except Exception:
-                        import logging
-
                         logging.getLogger(__name__).exception("UCE failed in RCA flow; falling back to compressed prompt")
                         messages = legacy_messages
                         prompt_metrics = _legacy_metrics(legacy_messages, fallback_used=True)

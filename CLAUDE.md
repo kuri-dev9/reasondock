@@ -4,7 +4,63 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ollama 로컬 LLM 기반 웹 채팅 애플리케이션. FastAPI 백엔드 + React 프론트엔드로 구성되며, BM25+TF-IDF 하이브리드 RAG, SSE 스트리밍, 멀티 세션 대화, 파일 첨부, 지식 저장소를 지원한다.
+Ollama 로컬 LLM 기반 웹 채팅 애플리케이션. FastAPI 백엔드 + React 프론트엔드로 구성되며, BM25+TF-IDF 하이브리드 RAG, SSE 스트리밍, 멀티 세션 대화, 파일 첨부, 지식 저장소, DPE(Document Processing Engine), UCE(Unified Context Engine)를 지원한다.
+
+---
+
+## 필수 코딩 규칙 (MUST FOLLOW)
+
+### 1. LLM 호출 규칙
+**반드시 `app/services/llm.py`의 `chat()` 또는 `stream_chat()`을 통해 호출한다.**
+- `httpx`나 `requests`로 Ollama API를 직접 호출하지 말 것
+- `routes/normalize.py`는 DPE가 호출하는 전용 엔드포인트이며 여기서만 httpx 직접 호출 허용 (간접 LLM 호출)
+- 다른 모든 라우트/서비스는 `llm.py`를 통해서만 LLM 접근
+
+### 2. 모델명 하드코딩 금지
+**코드 어디에도 모델명(`gemma4:26b`, `exaone3.5:7.8b` 등)을 하드코딩하지 말 것.**
+- 항상 `settings.default_ollama_model` 사용
+- `config.py`의 `default_ollama_model` 기본값은 `.env`에서 override
+
+### 3. UCE ON/OFF 분리
+- **UCE OFF**: `vector_store` 청크 기반 RAG (legacy). 기존 로직 절대 수정 금지
+- **UCE ON**: `KnowledgeDocument.normalized_content` (DPE IR) 문서 단위 전달
+- UCE ON 로직은 `chat.py`의 `if data.use_uce and settings.uce_enabled:` 블록 안에만 존재
+
+### 4. DPE 아키텍처
+- DPE는 문서 정규화 엔진 (Semantic IR 생성)
+- DPE normalization 적용 문서: `content_type=dpe_ir`, `normalized_content` 컬럼에 저장
+- 청크는 UCE OFF용으로만 사용 (`vector_store`). DPE IR은 `normalized_content`에 별도 저장
+- DPE 엔드포인트: `http://dpe:8200/process`
+- DPE가 LLM normalization 요청 시만 `backend /api/normalize` 호출
+
+### 5. 서비스 구조
+```
+Frontend (3000) → Backend (8000) → Ollama (11434)
+                              → UCE (8100)
+                              → DPE (8200) → Backend /api/normalize → Ollama
+```
+
+### 6. RCA 아키텍처 (TO-BE — 구현 진행 중)
+**현재 상태:** 1회성 파싱 + LLM 리포트 (기존 흐름 유지)
+**목표:** DuckDB 기반 인터랙티브 조사 워크스페이스
+
+**핵심 규칙:**
+- `rca/duckdb_store.py`에서만 DuckDB 연결 생성 — 다른 모듈 직접 연결 금지
+- DuckDB 동기 함수를 async 환경에서 호출 시 반드시 `asyncio.to_thread()` 사용
+- 원본 `.dat` 파일은 DuckDB 저장 성공 확인 후에만 삭제
+- `POST /api/rca/jobs` 기존 1회성 리포트 흐름 하위 호환 필수 유지
+- dataset_id: 파일명 기반, 특수문자 `_`로 치환 (예: `LTE_CALL_KPI_R1_20260518_1100`)
+- xDR 전체를 LLM에 넣지 않음 — DuckDB에서 필터링된 서브셋만 전달
+
+**신규 모듈 (Phase 1~3 구현 예정):**
+- `rca/duckdb_store.py` — DuckDB 저장/조회
+- `rca/query_planner.py` — 자연어 → DuckDB SQL 변환 (초기 LLM 기반)
+- `rca/dataset_manager.py` — 데이터셋 생명주기 관리
+
+**상세 설계:** `docs/RCA_INVESTIGATION_WORKSPACE.md` 참조
+
+---
+
 
 ## Common Commands
 
@@ -106,13 +162,15 @@ CSS 변수 기반 다크/라이트 테마. `document.documentElement`에 `data-t
 - 한글 파일명 내보내기 시 `urllib.parse.quote`로 URL 인코딩 필요 (latin-1 헤더 제약)
 - Ollama API: 모델 목록 `/api/tags`, 채팅 `/api/chat`, 단일 생성 `/api/generate`
 - 요약 유사도 계산 시 BM25는 문서 1개일 때 음수를 반환할 수 있으므로 TF-IDF 코사인 유사도 단독 사용 (`_compute_summary_similarity`)
-- 지식 문서 요약은 업로드 시 Ollama `gemma4:26b`로 생성 (텍스트 앞 4000자 기반, 3~5문장)
+- 지식 문서 요약은 `llm.py`의 `chat()`을 통해 `settings.default_ollama_model`로 생성 (텍스트 앞 4000자 기반, 3~5문장)
 
 ## Ports
 
 | Service  | Port  |
-|----------|-------|
-| Frontend | 3000  |
-| Backend  | 8000  |
-| MySQL    | 3306  |
-| Ollama   | 11434 |
+|----------|---------|
+| Frontend | 3000    |
+| Backend  | 8000    |
+| MySQL    | 3306    |
+| Ollama   | 11434   |
+| UCE      | 8100    |
+| DPE      | 8200    |

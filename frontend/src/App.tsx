@@ -1,185 +1,70 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import ModelSelector from './components/ModelSelector';
 import ThemeToggle from './components/ThemeToggle';
+import ThinkingIndicator from './components/ThinkingIndicator';
 import KnowledgePanel from './components/KnowledgePanel';
 import SystemPromptEditor from './components/SystemPromptEditor';
-import { Conversation, Message, OllamaModel, Attachment, PromptMetrics } from './types';
-import {
-  fetchConversations,
-  createConversation,
-  fetchConversation,
-  deleteConversation,
-  updateConversation,
-  fetchModels,
-  streamChat,
-  uploadAttachment,
-  fetchAttachments,
-  deleteAttachment,
-  uploadRcaFile,
-  streamRcaJob,
-  exportConversation,
-  importConversation,
-} from './api';
+import { useConversations } from './hooks/useConversations';
+import { useAttachments } from './hooks/useAttachments';
+import { useChat } from './hooks/useChat';
+import { useRca } from './hooks/useRca';
+import { Message } from './types';
+import { createConversation, fetchKnowledgeDocs, uploadAttachment } from './api';
 import './App.css';
 
 function App() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [models, setModels] = useState<OllamaModel[]>([]);
-  const [selectedModel, setSelectedModel] = useState('gemma4:26b');
   const [streaming, setStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [thinkingContent, setThinkingContent] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [currentSystemPrompt, setCurrentSystemPrompt] = useState('');
+  const [dark, setDark] = useState(false);
+  const [useUce, setUseUce] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
-  const [currentSystemPrompt, setCurrentSystemPrompt] = useState('');
-  const [dark, setDark] = useState(true);
-  const [useUce, setUseUce] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [dropActive, setDropActive] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeConvIdRef = useRef<number | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const rcaEventSourceRef = useRef<EventSource | null>(null);
 
-  useEffect(() => {
-    activeConvIdRef.current = activeConvId;
-  }, [activeConvId]);
+  // ── Conversations ────────────────────────────────────────────
+  const {
+    conversations,
+    setConversations,
+    activeConvId,
+    setActiveConvId,
+    models,
+    loadConversations,
+    loadModels,
+    handleSelectConversation,
+    handleCreateConversation,
+    handleDeleteConversation,
+    handleRenameConversation,
+    handleModelChange,
+    handleSystemPromptSave,
+    handleExport,
+    handleImport,
+  } = useConversations({
+    streaming,
+    selectedModel,
+    setSelectedModel,
+    currentSystemPrompt,
+    setCurrentSystemPrompt,
+    setMessages,
+    setAttachments: (a) => setAttachments(a),
+    setStreamingContent,
+    setThinkingContent,
+    activeConvIdRef,
+  });
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-  }, [dark]);
-
-  useEffect(() => {
-    loadConversations();
-    loadModels();
-  }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
-
-  useEffect(() => {
-    if (activeConvId) {
-      loadAttachments(activeConvId);
-    } else {
-      setAttachments([]);
-    }
-  }, [activeConvId]);
-
-  const loadConversations = async () => {
-    const data = await fetchConversations();
-    setConversations(data);
-  };
-
-  const loadModels = async () => {
-    try {
-      const data = await fetchModels();
-      setModels(data);
-      if (data.length > 0 && !data.find((m: OllamaModel) => m.name === selectedModel)) {
-        setSelectedModel(data[0].name);
-      }
-    } catch {}
-  };
-
-  const loadAttachments = async (convId: number) => {
-    try {
-      const data = await fetchAttachments(convId);
-      setAttachments(data);
-    } catch {
-      setAttachments([]);
-    }
-  };
-
-  const handleSelectConversation = useCallback(async (id: number) => {
-    if (streaming) return;
-    setActiveConvId(id);
-    setMessages([]);
-    setStreamingContent('');
-    setThinkingContent('');
-    const data = await fetchConversation(id);
-    if (activeConvIdRef.current === id) {
-      setMessages(data.messages || []);
-      setSelectedModel(data.model);
-      setCurrentSystemPrompt(data.system_prompt || '');
-    }
-  }, [streaming]);
-
-  const handleCreateConversation = async () => {
-    if (streaming) return;
-    const conv = await createConversation('새 대화', selectedModel);
-    setConversations((prev) => [conv, ...prev]);
-    setActiveConvId(conv.id);
-    setMessages([]);
-    setStreamingContent('');
-    setThinkingContent('');
-    setAttachments([]);
-    setCurrentSystemPrompt('');
-  };
-
-  const handleDeleteConversation = async (id: number) => {
-    if (streaming) return;
-    await deleteConversation(id);
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (activeConvId === id) {
-      setActiveConvId(null);
-      setMessages([]);
-      setAttachments([]);
-      setCurrentSystemPrompt('');
-    }
-  };
-
-  const handleRenameConversation = async (id: number, title: string) => {
-    await updateConversation(id, { title });
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, title } : c))
-    );
-  };
-
-  const handleModelChange = async (model: string) => {
-    setSelectedModel(model);
-    if (activeConvId) {
-      await updateConversation(activeConvId, { model });
-    }
-  };
-
-  const handleSystemPromptSave = async (prompt: string) => {
-    setCurrentSystemPrompt(prompt);
-    if (activeConvId) {
-      await updateConversation(activeConvId, { system_prompt: prompt || '' });
-    } else {
-      const conv = await createConversation('새 대화', selectedModel, prompt || null);
-      setConversations((prev) => [conv, ...prev]);
-      setActiveConvId(conv.id);
-      setMessages([]);
-      setAttachments([]);
-    }
-  };
-
-  const handleExport = async (id: number, format: 'json' | 'markdown') => {
-    try {
-      await exportConversation(id, format);
-    } catch {
-      alert('내보내기에 실패했습니다.');
-    }
-  };
-
-  const handleImport = async (file: File) => {
-    try {
-      const conv = await importConversation(file);
-      setConversations((prev) => [conv, ...prev]);
-      setActiveConvId(conv.id);
-      const data = await fetchConversation(conv.id);
-      setMessages(data.messages || []);
-      setSelectedModel(data.model);
-      setCurrentSystemPrompt(data.system_prompt || '');
-    } catch (err: any) {
-      alert(`가져오기 실패: ${err.message}`);
-    }
-  };
+  // ── Attachments ──────────────────────────────────────────────
+  const { attachments, setAttachments, loadAttachments, handleFileRemove } =
+    useAttachments();
 
   const handleFileUpload = async (file: File) => {
     let convId: number;
@@ -187,6 +72,7 @@ function App() {
       const conv = await createConversation('새 대화', selectedModel, currentSystemPrompt || null);
       setConversations((prev) => [conv, ...prev]);
       setActiveConvId(conv.id);
+      activeConvIdRef.current = conv.id;
       setMessages([]);
       convId = conv.id;
     } else {
@@ -196,10 +82,89 @@ function App() {
     setAttachments((prev) => [...prev, att]);
   };
 
-  const handleFileRemove = async (attachmentId: number) => {
-    if (!activeConvId) return;
-    await deleteAttachment(activeConvId, attachmentId);
-    setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+  // ── Chat ─────────────────────────────────────────────────────
+  const { sendMessage, handleCancel: _handleCancel, abortRef } = useChat({
+    activeConvIdRef,
+    setMessages,
+    setStreaming,
+    setStreamingContent,
+    setThinkingContent,
+    setConversations,
+  });
+
+  // ── RCA ──────────────────────────────────────────────────────
+  const { handleRcaUpload: _handleRcaUpload, rcaEventSourceRef } = useRca({
+    activeConvIdRef,
+    setMessages,
+    setStreaming,
+    setStreamingContent,
+    setThinkingContent,
+    loadConversations,
+  });
+
+  // ── Effects ──────────────────────────────────────────────────
+  useEffect(() => { activeConvIdRef.current = activeConvId; }, [activeConvId]);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+  useEffect(() => { loadConversations(); loadModels(); }, []);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingContent]);
+  useEffect(() => {
+    if (activeConvId) loadAttachments(activeConvId);
+    else setAttachments([]);
+  }, [activeConvId]);
+
+  // ── Wrappers ─────────────────────────────────────────────────
+  const handleSend = async (message: string) => {
+    if (useUce) {
+      const docs = await fetchKnowledgeDocs();
+      const processingDocs = docs.filter((d: any) => d.status === 'processing');
+      if (processingDocs.length > 0) {
+        const names = processingDocs.map((d: any) => d.filename).join(', ');
+        const confirmed = window.confirm(
+          `지식 저장소에서 신규 문서를 처리하고 있습니다.\n\n처리 중인 문서: ${names}\n\n현재 처리 중인 문서는 이번 프롬프트에 적용되지 않습니다.\n\n계속하시겠습니까?`
+        );
+        if (!confirmed) return;
+      }
+    }
+
+    if (!activeConvId) {
+      const conv = await createConversation('새 대화', selectedModel, currentSystemPrompt || null);
+      setConversations((prev) => [conv, ...prev]);
+      setActiveConvId(conv.id);
+      setMessages([]);
+      sendMessage(conv.id, message, useUce);
+    } else {
+      sendMessage(activeConvId, message, useUce);
+    }
+  };
+
+  const handleCancel = () => _handleCancel(activeConvId, rcaEventSourceRef);
+
+  const handleMessagesDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!streaming) setDropActive(true);
+  };
+
+  const handleMessagesDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropActive(false);
+    }
+  };
+
+  const handleMessagesDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDropActive(false);
+    if (streaming) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.name.toLowerCase().endsWith('.dat')) {
+      await handleRcaUpload(file);
+    } else {
+      await handleFileUpload(file);
+    }
   };
 
   const handleRcaUpload = async (file: File) => {
@@ -214,199 +179,17 @@ function App() {
     } else {
       convId = activeConvId;
     }
-
-    const userMsg: Message = {
-      id: Date.now(),
-      conversation_id: convId,
-      role: 'user',
-      content: `xDR RCA 분석 요청: ${file.name}`,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev.filter((m) => m.conversation_id === convId), userMsg]);
-    setStreaming(true);
-    setStreamingContent('RCA 분석 중입니다...');
-    setThinkingContent('');
-
-    try {
-      const response = await uploadRcaFile(convId, file, useUce);
-      let source: EventSource | null = null;
-      source = streamRcaJob(
-        response.job.id,
-        (event) => {
-          const visible = activeConvIdRef.current === convId;
-          if (event.step === 'queued' && visible) {
-            setStreamingContent('RCA 작업이 대기 중입니다...');
-          } else if (event.step === 'parsing' && visible) {
-            setStreamingContent('xDR 파일 파싱 중입니다...');
-          } else if (event.step === 'aggregating' && visible) {
-            setStreamingContent('');
-          } else if (event.step === 'summary_token' && event.token && visible) {
-            setStreamingContent((prev) => prev + event.token);
-          } else if (event.step === 'summary_done' && visible) {
-            setStreamingContent((prev) => `${prev}\n`);
-            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
-          } else if (event.step === 'llm_prepare' && visible) {
-            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
-          } else if (event.step === 'llm' && visible) {
-            setThinkingContent('LLM RCA 리포트 생성 중입니다...');
-          } else if (event.step === 'llm_token' && event.token && visible) {
-            setThinkingContent('');
-            setStreamingContent((prev) => prev + event.token);
-          } else if (event.step === 'done') {
-            source?.close();
-            rcaEventSourceRef.current = null;
-            if (event.message && visible) {
-              setMessages((prev) => [
-                ...prev.filter((m) => !(m.conversation_id === convId && m.id === userMsg.id)),
-                userMsg,
-                event.message as Message,
-              ]);
-            }
-            if (visible) {
-              setStreaming(false);
-              setStreamingContent('');
-              setThinkingContent('');
-            }
-            loadConversations();
-          } else if (event.step === 'error') {
-            source?.close();
-            rcaEventSourceRef.current = null;
-            if (visible) {
-              setStreaming(false);
-              setStreamingContent('');
-              setThinkingContent('');
-              alert(`RCA 분석 실패: ${event.error || '알 수 없는 오류'}`);
-            }
-          }
-        },
-        (err) => {
-          source?.close();
-          rcaEventSourceRef.current = null;
-          if (activeConvIdRef.current === convId) {
-            setStreaming(false);
-            setStreamingContent('');
-            setThinkingContent('');
-            alert(`RCA 분석 실패: ${err}`);
-          }
-        }
-      );
-      rcaEventSourceRef.current = source;
-    } catch (err: any) {
-      setStreaming(false);
-      setStreamingContent('');
-      throw err;
-    }
+    await _handleRcaUpload(file, convId, useUce);
   };
 
-  const handleCancel = () => {
-    if (rcaEventSourceRef.current) {
-      rcaEventSourceRef.current.close();
-      rcaEventSourceRef.current = null;
-    }
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
-    }
-    setStreamingContent((prev) => {
-      if (prev) {
-        const assistantMsg: Message = {
-          id: Date.now() + 1,
-          conversation_id: activeConvId || 0,
-          role: 'assistant',
-          content: prev + '\n\n*(응답이 중단되었습니다)*',
-          created_at: new Date().toISOString(),
-        };
-        setMessages((msgs) => [...msgs, assistantMsg]);
-      }
-      return '';
-    });
-    setStreaming(false);
-    setThinkingContent('');
-  };
-
-  const handleSend = async (message: string) => {
-    if (!activeConvId) {
-      const conv = await createConversation('새 대화', selectedModel, currentSystemPrompt || null);
-      setConversations((prev) => [conv, ...prev]);
-      setActiveConvId(conv.id);
-      setMessages([]);
-      sendMessage(conv.id, message, useUce);
-    } else {
-      sendMessage(activeConvId, message, useUce);
-    }
-  };
-
-  const sendMessage = (convId: number, message: string, useUceForMessage: boolean) => {
-    const userMsg: Message = {
-      id: Date.now(),
-      conversation_id: convId,
-      role: 'user',
-      content: message,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => {
-      const filtered = prev.filter((m) => m.conversation_id === convId);
-      return [...filtered, userMsg];
-    });
-    setStreaming(true);
-    setStreamingContent('');
-    setThinkingContent('');
-
-    const controller = streamChat(
-      convId,
-      message,
-      useUceForMessage,
-      (token) => {
-        if (activeConvIdRef.current !== convId) return;
-        setStreamingContent((prev) => prev + token);
-      },
-      (title, references, metadata?: PromptMetrics) => {
-        setStreamingContent((prev) => {
-          if (prev) {
-            const assistantMsg: Message = {
-              id: Date.now() + 1,
-              conversation_id: convId,
-              role: 'assistant',
-              content: prev,
-              created_at: new Date().toISOString(),
-              references,
-              metrics: metadata,
-            };
-            setMessages((msgs) => [...msgs, assistantMsg]);
-          }
-          return '';
-        });
-        setStreaming(false);
-        setThinkingContent('');
-        abortRef.current = null;
-        if (title) {
-          setConversations((prev) =>
-            prev.map((c) => (c.id === convId ? { ...c, title } : c))
-          );
-        }
-      },
-      (err) => {
-        setStreamingContent('');
-        setThinkingContent('');
-        setStreaming(false);
-        abortRef.current = null;
-        if (err !== 'AbortError') {
-          alert(`오류: ${err}`);
-        }
-      },
-      () => {
-        if (activeConvIdRef.current !== convId) return;
-        setThinkingContent('생각 중...');
-      }
-    );
-    abortRef.current = controller;
-  };
-
+  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="app">
       <Sidebar
         conversations={conversations}
         activeId={activeConvId}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSelect={handleSelectConversation}
         onCreate={handleCreateConversation}
         onDelete={handleDeleteConversation}
@@ -423,7 +206,10 @@ function App() {
               onClick={() => setSystemPromptOpen(true)}
               title="시스템 프롬프트"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
               {currentSystemPrompt ? '프롬프트 설정됨' : '시스템 프롬프트'}
             </button>
             <button className="knowledge-btn" onClick={() => setKnowledgeOpen(true)} title="지식 저장소">
@@ -432,7 +218,21 @@ function App() {
             <ThemeToggle dark={dark} onToggle={() => setDark(!dark)} />
           </div>
         </header>
-        <div className="messages">
+
+        <div
+          className={`messages${dropActive ? ' drop-active' : ''}`}
+          onDragOver={handleMessagesDragOver}
+          onDragLeave={handleMessagesDragLeave}
+          onDrop={handleMessagesDrop}
+        >
+          {dropActive && (
+            <div className="drop-overlay">
+              <div className="drop-overlay-inner">
+                <span className="drop-icon">📎</span>
+                <span>.dat → RCA 분석 &nbsp;|&nbsp; 기타 → 첨부</span>
+              </div>
+            </div>
+          )}
           {messages.length === 0 && !streaming && (
             <div className="empty-state">
               <h2>대화를 시작하세요</h2>
@@ -440,41 +240,34 @@ function App() {
             </div>
           )}
           {messages.map((msg) => (
-            <ChatMessage key={msg.id} role={msg.role} content={msg.content} references={msg.references} metrics={msg.metrics} />
+            <ChatMessage
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              references={msg.references}
+              metrics={msg.metrics}
+            />
           ))}
           {streaming && !streamingContent && thinkingContent && (
-            <div className="message assistant">
-              <div className="message-avatar">
-                <img src="/ai_icon.svg" alt="AI" className="avatar-icon" />
-              </div>
-              <div className="message-content thinking-indicator">
-                <span className="thinking-label">생각 중...</span>
-              </div>
-            </div>
+            <ThinkingIndicator label={thinkingContent} />
           )}
           {streaming && streamingContent && (
             <>
               <ChatMessage role="assistant" content={streamingContent} />
               {thinkingContent && (
-                <div className="message assistant">
-                  <div className="message-avatar">
-                    <img src="/ai_icon.svg" alt="AI" className="avatar-icon" />
-                  </div>
-                  <div className="message-content thinking-indicator">
-                    <span className="thinking-label">{thinkingContent}</span>
-                  </div>
-                </div>
+                <ThinkingIndicator label={thinkingContent} />
               )}
             </>
           )}
           <div ref={messagesEndRef} />
         </div>
+
         <ChatInput
           onSend={handleSend}
           onCancel={handleCancel}
           onFileUpload={handleFileUpload}
           onRcaUpload={handleRcaUpload}
-          onFileRemove={handleFileRemove}
+          onFileRemove={(id) => handleFileRemove(id, activeConvId)}
           attachments={attachments}
           disabled={streaming}
           streaming={streaming}
@@ -482,6 +275,7 @@ function App() {
           onUseUceChange={setUseUce}
         />
       </main>
+
       <KnowledgePanel visible={knowledgeOpen} onClose={() => setKnowledgeOpen(false)} />
       <SystemPromptEditor
         visible={systemPromptOpen}

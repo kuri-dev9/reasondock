@@ -142,6 +142,46 @@ export async function fetchKnowledgeDocStatus(id: number) {
   return res.json();
 }
 
+export async function fetchKnowledgeDocText(id: number): Promise<string> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/text`);
+  if (!res.ok) throw new Error('원본 텍스트 로드 실패');
+  return res.text();
+}
+
+export async function fetchKnowledgeDocNormalized(id: number): Promise<string> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/normalized`);
+  if (!res.ok) throw new Error('DPE IR 로드 실패');
+  return res.text();
+}
+
+export async function fetchKnowledgeDocUceDenoised(id: number): Promise<string> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/uce-denoised`);
+  if (!res.ok) throw new Error('UCE denoised 로드 실패');
+  return res.text();
+}
+
+export async function analyzeKnowledgeDoc(id: number): Promise<any> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/analyze`, { method: 'POST' });
+  if (!res.ok) throw new Error('DPE 분석 실패');
+  return res.json();
+}
+
+export async function updateUserIr(id: number, content: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/user-ir`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error('저장 실패');
+  return res.json();
+}
+
+export async function restoreGeneratedIr(id: number): Promise<any> {
+  const res = await fetch(`${API_BASE}/knowledge/${id}/restore-ir`, { method: 'POST' });
+  if (!res.ok) throw new Error('복원 실패');
+  return res.json();
+}
+
 // Search
 export async function searchConversations(query: string): Promise<SearchResult[]> {
   const res = await fetch(`${API_BASE}/conversations/search?q=${encodeURIComponent(query)}`);

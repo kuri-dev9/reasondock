@@ -18,6 +18,9 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [rcaUploading, setRcaUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  // dragActive는 더 이상 ChatInput에서 관리하지 않음 (App.tsx의 messages 영역으로 이동)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rcaInputRef = useRef<HTMLInputElement>(null);
@@ -30,13 +33,14 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
   }, [input]);
 
   const handleSubmit = () => {
-    if (!input.trim() || disabled) return;
-    onSend(input.trim());
+    const text = input.trim();
+    if (!text || disabled) return;
     setInput('');
+    onSend(text);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSubmit();
     }
@@ -45,6 +49,11 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await uploadRegularFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadRegularFile = async (file: File) => {
     setUploading(true);
     try {
       await onFileUpload(file);
@@ -52,13 +61,17 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
       alert(err.message || '파일 업로드 실패');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleRcaFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await uploadRcaFile(file);
+    if (rcaInputRef.current) rcaInputRef.current.value = '';
+  };
+
+  const uploadRcaFile = async (file: File) => {
     setRcaUploading(true);
     try {
       await onRcaUpload(file);
@@ -66,9 +79,12 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
       alert(err.message || 'RCA 분석 실패');
     } finally {
       setRcaUploading(false);
-      if (rcaInputRef.current) rcaInputRef.current.value = '';
     }
   };
+
+  const handleDragOver = (_e: React.DragEvent) => {};
+  const handleDragLeave = (_e: React.DragEvent) => {};
+  const handleDrop = (_e: React.DragEvent) => {};
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes}B`;
@@ -77,9 +93,19 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
   };
 
   return (
-    <div className="chat-input-wrapper">
-      {attachments.length > 0 && (
-        <div className="attachments-bar">
+    <div
+      className={`chat-input-wrapper${dragActive ? ' drag-active' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {dragActive && (
+        <div className="chat-drop-hint">
+          파일을 놓으면 첨부됩니다. .dat 파일은 RCA 분석으로 처리됩니다.
+        </div>
+      )}
+      <div className="toolbar-bar">
+        <div className="toolbar-attachments">
           {attachments.map((att) => (
             <div key={att.id} className="attachment-chip">
               <span className="attachment-icon">📎</span>
@@ -89,19 +115,15 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
                 className="attachment-remove"
                 onClick={() => onFileRemove(att.id)}
                 disabled={disabled}
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           ))}
         </div>
-      )}
-      <div className="prompt-options-bar">
         <label className={`uce-toggle ${useUce ? 'enabled' : ''}`}>
           <input
             type="checkbox"
             checked={useUce}
-            onChange={(event) => onUseUceChange(event.target.checked)}
+            onChange={(e) => onUseUceChange(e.target.checked)}
             disabled={disabled}
           />
           <span>향상된 프롬프트</span>
@@ -110,7 +132,7 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
       <div className="chat-input-container">
         <button
           className="attach-btn"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
           disabled={disabled || uploading}
           title="파일 첨부"
         >
@@ -125,7 +147,7 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
         />
         <button
           className="rca-btn"
-          onClick={() => rcaInputRef.current?.click()}
+          onClick={(e) => { e.stopPropagation(); rcaInputRef.current?.click(); }}
           disabled={disabled || rcaUploading}
           title="xDR RCA 분석"
         >

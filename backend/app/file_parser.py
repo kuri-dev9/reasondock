@@ -20,9 +20,18 @@ def extract_text(filename: str, content: bytes) -> str:
     elif ext == ".hwpx":
         return _parse_hwpx(content)
     elif ext in (".csv",):
-        return content.decode("utf-8", errors="replace")
+        return _decode_text(content)
     else:
-        return content.decode("utf-8", errors="replace")
+        return _decode_text(content)
+
+
+def _decode_text(content: bytes) -> str:
+    for encoding in ("utf-8-sig", "utf-8", "cp949", "euc-kr"):
+        try:
+            return content.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return content.decode("utf-8", errors="replace")
 
 
 def _parse_pdf(content: bytes) -> str:

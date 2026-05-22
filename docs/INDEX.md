@@ -16,6 +16,7 @@
 
 | 문서 | 파일명 | 설명 |
 |------|--------|------|
+| RCA Investigation Workspace | [RCA_INVESTIGATION_WORKSPACE.md](RCA_INVESTIGATION_WORKSPACE.md) | TO-BE RCA 인터랙티브 조사 워크스페이스 아키텍처. DuckDB 설계, Query Planning, 구현 단계 |
 | RCA 통합 설계 | [RCA_DESIGN.md](RCA_DESIGN.md) | AS-IS → TO-BE 구조, 모듈 책임 분리, DB/API 스펙, 구현 단계 |
 | Reasoning 아키텍처 | [07_Deterministic_Reasoning_Architecture.md](07_Deterministic_Reasoning_Architecture.md) | RCA Engine 설계 철학, LLM 역할 정의, Reasoning 계층 상세 |
 

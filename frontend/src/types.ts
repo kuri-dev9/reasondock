@@ -6,6 +6,24 @@ export interface Reference {
   job_id?: number;
 }
 
+export interface UceContextDebugItem {
+  id?: string;
+  source?: string;
+  type?: string;
+  status?: string;
+  section?: string | null;
+  score?: number | null;
+  preview?: string;
+  full_content?: string;
+  reason?: string;
+  score_breakdown?: Record<string, any>;
+  matched_terms?: string[];
+  taxonomy?: string[];
+  drop_reason?: string | null;
+  heading_level?: number | null;
+  parent_id?: string | null;
+}
+
 export interface PromptMetrics {
   use_uce: boolean;
   fallback_used: boolean;
@@ -17,9 +35,21 @@ export interface PromptMetrics {
   llm_total_latency_ms?: number | null;
   selected_context_count?: number | null;
   dropped_context_count?: number | null;
+  retrieval_confidence?: number | null;
+  retrieval_warning?: string | null;
+  content_type?: string | null;
+  survived_items?: UceContextDebugItem[];
+  dropped_items?: UceContextDebugItem[];
+  query_type?: string | null;
+  compression_level?: string | null;
   intent?: string | null;
   topic_relation?: string | null;
+  final_prompt?: string | null;
   rca_processing?: RcaProcessingMetrics | null;
+  // 일반 채팅 전용
+  model?: string | null;
+  response_tokens?: number | null;
+  response_chars?: number | null;
 }
 
 export interface RcaProcessingMetrics {
@@ -67,6 +97,8 @@ export interface OllamaModel {
   provider?: string;
   display?: string;
   available?: boolean;
+  embedding?: boolean;
+  family?: string;
   size?: number;
   modified_at?: string;
 }
@@ -86,6 +118,10 @@ export interface KnowledgeDoc {
   summary?: string | null;
   status: 'processing' | 'ready' | 'error';
   error_message?: string;
+  dpe_metadata?: Record<string, any> | null;
+  has_dpe_ir?: boolean;
+  has_uce_denoised?: boolean;
+  dpe_ir_status?: 'RAW_ONLY' | 'GENERATED' | 'USER_EDITED';
   created_at: string;
 }
 

@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 
 from app.database import engine, Base
-from app.routes import conversations, chat, models, attachments, knowledge, rca
+from app.routes import conversations, chat, models, attachments, knowledge, rca, normalize
 
 
 async def _ensure_longtext_columns(conn):
@@ -23,6 +23,18 @@ async def _ensure_longtext_columns(conn):
         await conn.execute(text(statement))
     try:
         await conn.execute(text("ALTER TABLE messages ADD COLUMN metrics JSON NULL"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE knowledge_documents ADD COLUMN dpe_metadata JSON NULL"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE knowledge_documents ADD COLUMN normalized_content LONGTEXT NULL"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE knowledge_documents MODIFY normalized_content LONGTEXT NULL"))
     except SQLAlchemyError:
         pass
 
@@ -52,6 +64,7 @@ app.include_router(models.router)
 app.include_router(attachments.router)
 app.include_router(knowledge.router)
 app.include_router(rca.router)
+app.include_router(normalize.router)
 
 
 @app.get("/api/health")

@@ -31,12 +31,28 @@ def _message_to_uce(message: Any) -> dict[str, str]:
 
 def _chunk_to_document(chunk: dict[str, Any], index: int) -> dict[str, Any]:
     content = str(chunk.get("content") or "")
+    title = str(chunk.get("title") or chunk.get("filename") or "RAG Chunk")
+    source = str(chunk.get("source") or chunk.get("filename") or "vector_store")
+    content_type = str(chunk.get("content_type") or "")
+    if not content_type:
+        if chunk.get("normalization_applied"):
+            content_type = "dpe_ir"
+        elif chunk.get("chunk_strategy") == "heading-aware":
+            content_type = "markdown"
+        elif chunk.get("structure_type") in {"code", "json", "yaml", "log"}:
+            content_type = str(chunk["structure_type"])
+        elif any(name.lower().endswith((".md", ".markdown")) for name in (title, source)):
+            content_type = "markdown"
+        elif content.lstrip().startswith("#"):
+            content_type = "markdown"
+        else:
+            content_type = "text"
     return {
         "id": str(chunk.get("id") or chunk.get("chunk_id") or f"rag_chunk_{index + 1}"),
-        "title": str(chunk.get("title") or chunk.get("filename") or "RAG Chunk"),
+        "title": title,
         "content": content,
-        "content_type": "text",
-        "source": str(chunk.get("source") or chunk.get("filename") or "vector_store"),
+        "content_type": content_type,
+        "source": source,
         "importance": float(chunk.get("importance", 0.75)),
     }
 
@@ -48,7 +64,23 @@ async def build_context(
     recent_messages: list[Any],
     rag_chunks: list[dict[str, Any]],
     model: str,
+    rag_context: str = "",
+    previous_state: dict[str, Any] | None = None,
 ) -> UceContextResult:
+    documents = [_chunk_to_document(chunk, index) for index, chunk in enumerate(rag_chunks)]
+    if rag_context.strip():
+        documents.insert(
+            0,
+            {
+                "id": "knowledge_rag_context",
+                "title": "Knowledge Search Results",
+                "content": rag_context,
+                "content_type": "markdown" if "#" in rag_context else "text",
+                "source": "knowledge_store",
+                "importance": 1.0,
+            },
+        )
+
     payload = {
         "session_id": str(conversation_id),
         "current_message": {
@@ -56,7 +88,8 @@ async def build_context(
             "content": current_message,
         },
         "recent_messages": [_message_to_uce(message) for message in recent_messages[-15:]],
-        "documents": [_chunk_to_document(chunk, index) for index, chunk in enumerate(rag_chunks)],
+        "previous_state": previous_state,
+        "documents": documents,
         "options": {
             "target_model": model,
             "compression_level": "medium",

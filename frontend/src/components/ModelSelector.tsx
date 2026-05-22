@@ -12,11 +12,17 @@ export default function ModelSelector({ models, selectedModel, onChange }: Props
     <div className="model-selector">
       <label>모델:</label>
       <select value={selectedModel} onChange={(e) => onChange(e.target.value)}>
-        {models.map((m) => (
-          <option key={m.name} value={m.name} disabled={m.available === false}>
-            {m.display || m.name}{m.available === false ? ' (미설정)' : ''}
-          </option>
-        ))}
+        {models.map((m) => {
+          const isEmbedding = m.embedding === true;
+          const isUnavailable = m.available === false && !isEmbedding;
+          const disabled = isEmbedding || isUnavailable;
+          const suffix = isEmbedding ? ' (embeddings)' : isUnavailable ? ' (미설정)' : '';
+          return (
+            <option key={m.name} value={m.name} disabled={disabled}>
+              {m.display || m.name}{suffix}
+            </option>
+          );
+        })}
       </select>
     </div>
   );

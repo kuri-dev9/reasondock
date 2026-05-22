@@ -70,6 +70,10 @@ class KnowledgeDocument(Base):
     summary: Mapped[Optional[str]] = mapped_column(LONG_TEXT, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="processing")  # processing, ready, error
     error_message: Mapped[Optional[str]] = mapped_column(LONG_TEXT, nullable=True)
+    dpe_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    normalized_content: Mapped[Optional[str]] = mapped_column(LONG_TEXT, nullable=True)
+    uce_denoised_content: Mapped[Optional[str]] = mapped_column(LONG_TEXT, nullable=True)
+    dpe_ir_status: Mapped[str] = mapped_column(String(20), default="RAW_ONLY")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
