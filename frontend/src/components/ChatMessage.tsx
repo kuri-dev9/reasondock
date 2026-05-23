@@ -429,6 +429,7 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
   const [open, setOpen] = useState(false);
   const [sqlOpen, setSqlOpen] = useState(false);
   const [rowsOpen, setRowsOpen] = useState(false);
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   const [uceOpen, setUceOpen] = useState(false);
   const [finalPromptOpen, setFinalPromptOpen] = useState(false);
 
@@ -436,6 +437,8 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
 
   const resultRows: Record<string, unknown>[] = metrics.xdr_query_result_rows ?? [];
   const columns = resultRows.length > 0 ? Object.keys(resultRows[0]) : [];
+  const selectedFields = metrics.xdr_selected_schema_fields ?? [];
+  const candidateFields = metrics.xdr_candidate_fields_before_planner ?? [];
 
   return (
     <div className="rca-inv-panel">
@@ -482,9 +485,37 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
           )}
 
           {/* 3. Generated SQL */}
+          {(selectedFields.length > 0 || candidateFields.length > 0) && (
+            <div className="rca-inv-section">
+              <div className="rca-inv-section-title">3. Planner 입력 필드</div>
+              <table className="rca-inv-kv-table">
+                <tbody>
+                  <tr>
+                    <th>선택 필드</th>
+                    <td className="rca-inv-mono">{selectedFields.length ? selectedFields.join(', ') : '-'}</td>
+                  </tr>
+                  <tr>
+                    <th>후보 풀</th>
+                    <td>
+                      <button className="rca-inv-expand-btn inline" onClick={() => setFieldsOpen(!fieldsOpen)}>
+                        {fieldsOpen ? '후보 접기' : `후보 보기 (${candidateFields.length}개)`}
+                      </button>
+                      {fieldsOpen && (
+                        <div className="rca-inv-field-list">
+                          {candidateFields.length ? candidateFields.join(', ') : '-'}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 4. Generated SQL */}
           {metrics.xdr_query_sql && (
             <div className="rca-inv-section">
-              <div className="rca-inv-section-title">3. 생성된 SQL</div>
+              <div className="rca-inv-section-title">4. 생성된 SQL</div>
               <button className="rca-inv-expand-btn" onClick={() => setSqlOpen(!sqlOpen)}>
                 {sqlOpen ? '▲ SQL 접기' : '▼ SQL 보기'}
               </button>
@@ -492,9 +523,9 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
             </div>
           )}
 
-          {/* 4. Execution Metadata */}
+          {/* 5. Execution Metadata */}
           <div className="rca-inv-section">
-            <div className="rca-inv-section-title">4. 쿼리 실행 메타데이터</div>
+            <div className="rca-inv-section-title">5. 쿼리 실행 메타데이터</div>
             <table className="rca-inv-kv-table">
               <tbody>
                 <tr>
@@ -509,11 +540,11 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
             </table>
           </div>
 
-          {/* 5. Raw Query Result */}
+          {/* 6. Raw Query Result */}
           <div className="rca-inv-section">
-            <div className="rca-inv-section-title">5. 원시 쿼리 결과</div>
+            <div className="rca-inv-section-title">6. 원시 쿼리 결과</div>
             {resultRows.length === 0 ? (
-              <div className="rca-inv-empty">결과 없음</div>
+              <div className="rca-inv-empty">{metrics.xdr_raw_query_result_preview || '결과 없음'}</div>
             ) : (
               <>
                 <button className="rca-inv-expand-btn" onClick={() => setRowsOpen(!rowsOpen)}>
@@ -541,10 +572,10 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
             )}
           </div>
 
-          {/* 6. UCE Compression */}
+          {/* 7. UCE Compression */}
           {metrics.use_uce && (
             <div className="rca-inv-section">
-              <div className="rca-inv-section-title">6. UCE 압축 현황</div>
+              <div className="rca-inv-section-title">7. UCE 압축 현황</div>
               <button className="rca-inv-expand-btn" onClick={() => setUceOpen(!uceOpen)}>
                 {uceOpen ? '▲ UCE 접기' : '▼ UCE 압축 상세 보기'}
               </button>
@@ -575,10 +606,10 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
             </div>
           )}
 
-          {/* 7. Final Context */}
+          {/* 8. Final Context */}
           {metrics.final_prompt && (
             <div className="rca-inv-section">
-              <div className="rca-inv-section-title">7. 최종 컨텍스트 (LLM 입력)</div>
+              <div className="rca-inv-section-title">8. 최종 컨텍스트 (LLM 입력)</div>
               <button className="rca-inv-expand-btn" onClick={() => setFinalPromptOpen(!finalPromptOpen)}>
                 {finalPromptOpen ? '▲ 접기' : '▼ Final Prompt 보기'}
               </button>

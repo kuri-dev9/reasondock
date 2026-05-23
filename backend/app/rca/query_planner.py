@@ -127,11 +127,12 @@ async def _load_field_taxonomy(
     if schema_id is None:
         from app.routes.xdr_schema import active_schema_id
         schema_id = await active_schema_id(db)
+    requested_field_names = set(field_map)
+    query = select(XdrFieldSchema).where(XdrFieldSchema.schema_id == schema_id)
+    if requested_field_names:
+        query = query.where(XdrFieldSchema.field_name.in_(requested_field_names))
     result = await db.execute(
-        select(XdrFieldSchema)
-        .where(
-            XdrFieldSchema.schema_id == schema_id,
-        )
+        query
         .options(selectinload(XdrFieldSchema.keywords))
         .order_by(XdrFieldSchema.is_active.desc(), XdrFieldSchema.spec_no, XdrFieldSchema.id)
     )

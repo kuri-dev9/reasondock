@@ -948,6 +948,22 @@ body {
   background: var(--bg-secondary);
 }
 
+.rca-inv-expand-btn.inline {
+  display: inline-block;
+  width: auto;
+  border-top: none;
+  padding: 2px 0;
+}
+
+.rca-inv-field-list {
+  margin-top: 6px;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
 .rca-inv-sql {
   margin: 0;
   padding: 10px 12px;

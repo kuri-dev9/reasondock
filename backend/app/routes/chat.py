@@ -88,6 +88,29 @@ CONTINUATION_ENTITY_STOPWORDS = {
     "협상",
 }
 
+XDR_QUERY_SYNONYMS = {
+    "에러": ["error", "cause", "실패", "오류", "장애"],
+    "오류": ["error", "cause", "실패", "에러", "장애"],
+    "장애": ["failure", "error", "cause", "실패", "오류원인", "장애원인"],
+    "실패": ["failure", "error", "cause", "success_flag", "first_error"],
+    "원인": ["cause", "first_error_cause", "last_error_cause"],
+    "가입자": ["imsi", "subscriber", "단말"],
+    "단말": ["imsi", "imei", "ue", "terminal"],
+    "통계": ["count", "cnt", "group", "집계"],
+    "집계": ["count", "cnt", "group", "통계"],
+}
+
+
+def _expand_xdr_query_terms(message: str) -> set[str]:
+    terms = set(re.findall(r"[a-z0-9가-힣]+", message.lower()))
+    for token in list(terms):
+        if token.endswith("별") and len(token) > 1:
+            terms.add(token[:-1])
+        for key, values in XDR_QUERY_SYNONYMS.items():
+            if key in token or token in key:
+                terms.update(value.lower() for value in values)
+    return {term for term in terms if term}
+
 
 def _estimate_prompt_tokens(messages: list[dict]) -> int:
     text = "\n".join(str(message.get("content", "")) for message in messages)
@@ -426,6 +449,28 @@ async def chat(
                 )
             )
             active_dataset = ds_res.scalar_one_or_none()
+
+            if active_dataset:
+                existing_bindings = await db.execute(
+                    select(ConversationDataset).where(
+                        ConversationDataset.conversation_id == conversation_id
+                    )
+                )
+                selected_binding = None
+                for binding in existing_bindings.scalars().all():
+                    if binding.dataset_id == active_dataset.dataset_id:
+                        selected_binding = binding
+                        binding.is_primary = True
+                    else:
+                        binding.is_primary = False
+                if selected_binding is None:
+                    selected_binding = ConversationDataset(
+                        conversation_id=conversation_id,
+                        dataset_id=active_dataset.dataset_id,
+                        is_primary=True
+                    )
+                    db.add(selected_binding)
+                await db.commit()
         else:
             att_result = await db.execute(
                 select(RcaDataset)
@@ -438,8 +483,16 @@ async def chat(
             )
             attached_datasets = list(att_result.scalars().all())
             active_dataset = attached_datasets[0] if attached_datasets else None
-    except Exception:
-        logger.warning("데이터셋 조회 실패 (conv_id=%s)", conversation_id)
+
+        logger.info(
+            "[CHAT] conversation_id=%s active_dataset_id=%s dataset_found=%s dataset_name=%s",
+            conversation_id,
+            active_dataset.dataset_id if active_dataset else None,
+            active_dataset is not None,
+            getattr(active_dataset, 'filename', "-") if active_dataset else "-"
+        )
+    except Exception as e:
+        logger.warning("데이터셋 조회 실패 (conv_id=%s): %s", conversation_id, e)
 
     is_first_message = len(conv.messages) == 0
 
@@ -555,14 +608,105 @@ async def chat(
     xdr_execution_ms: int | None = None
     xdr_activated = False
 
+    # --- Context Slimming & Lightweight Activation ---
+    xdr_schema_hints: list[dict] = []
+    candidate_fields_preview: list[str] = []
+    all_fields_preview: list[str] = []
+    
     if active_dataset:
         try:
-            fields = await asyncio.to_thread(load_lte_call_kpi_spec)
+            all_specs = await asyncio.to_thread(load_lte_call_kpi_spec)
+            
+            # 1. DB에서 Schema 및 Alias 조회 (DB 수정 불필요)
+            schema_query = (
+                select(XdrFieldSchema)
+                .where(XdrFieldSchema.is_active == True)
+                .options(selectinload(XdrFieldSchema.keywords))
+            )
+            if active_dataset.schema_id:
+                schema_query = schema_query.where(
+                    XdrFieldSchema.schema_id == active_dataset.schema_id
+                )
+            schema_result = await db.execute(schema_query)
+            schema_fields = list(schema_result.scalars().all())
+            
+            all_fields_preview = [f.field_name for f in schema_fields]
+            
+            # 2. Runtime Candidate Selection
+            query_text = data.message.lower()
+            query_tokens = _expand_xdr_query_terms(data.message)
+            
+            scored_fields = []
+            for f in schema_fields:
+                score = 0
+                field_name_lower = f.field_name.lower() if f.field_name else ""
+                description_lower = f.description.lower() if f.description else ""
+                semantic_text = " ".join(
+                    str(value or "").lower()
+                    for value in (f.description, f.category, f.spec_section, f.role, f.db_type)
+                )
+                
+                if any(t in field_name_lower for t in query_tokens) or field_name_lower in query_text:
+                    score += 2
+                if any(t in description_lower for t in query_tokens):
+                    score += 1
+                if any(t in semantic_text for t in query_tokens):
+                    score += 1
+                if ("통계" in query_tokens or "집계" in query_tokens or "별" in query_text) and f.groupable:
+                    score += 0.5
+                if ("에러" in query_text or "오류" in query_text or "장애" in query_text or "실패" in query_text) and (
+                    "error" in field_name_lower or "cause" in field_name_lower or f.role == "cause_code"
+                ):
+                    score += 2
+                
+                for k in f.keywords:
+                    alias = k.keyword.lower()
+                    if alias in query_text or alias in query_tokens:
+                        score += 3
+                
+                scored_fields.append((score, f))
+            
+            # 상위 K개 필터링하여 Planner context 폭발 방지 (Slimming)
+            scored_fields.sort(key=lambda x: x[0], reverse=True)
+            candidate_schema_fields = [sf for s, sf in scored_fields if s > 0][:15]
+            schema_by_name = {field.field_name: field for field in schema_fields}
+            essential_names: list[str] = []
+            if any(term in query_text for term in ("에러", "오류", "장애", "실패", "failure", "error", "cause")):
+                essential_names.extend(["attempt_flag", "success_flag", "first_error_cause", "first_error_interface_protocol"])
+            if any(term in query_text for term in ("가입자", "단말", "imsi", "ue")):
+                essential_names.append("IMSI")
+            if any(term in query_text for term in ("기기", "imei", "terminal")):
+                essential_names.append("IMEI")
+            existing_candidate_names = {field.field_name for field in candidate_schema_fields}
+            for name in essential_names:
+                field = schema_by_name.get(name)
+                if field is not None and name not in existing_candidate_names:
+                    candidate_schema_fields.append(field)
+                    existing_candidate_names.add(name)
+            if not candidate_schema_fields:
+                candidate_schema_fields = [sf for s, sf in scored_fields][:5]  # Fallback
+                
+            candidate_field_names = {f.field_name for f in candidate_schema_fields}
+            candidate_fields_preview = [f.field_name for f in candidate_schema_fields]
+            
+            slimmed_specs = [spec for spec in all_specs if spec.name in candidate_field_names]
+            if not slimmed_specs:
+                slimmed_specs = all_specs[:5]
+                
+            xdr_schema_hints = [
+                {
+                    "field_name": f.field_name,
+                    "group": f.description or "",
+                    "aliases": [k.keyword for k in f.keywords],
+                }
+                for f in candidate_schema_fields
+            ]
+
             xdr_query_plan = await plan_query(
                 user_message=data.message,
                 dataset_id=active_dataset.dataset_id,
                 model=conv.model,
-                fields=fields,
+                fields=slimmed_specs,
                 db=db,
                 schema_id=active_dataset.schema_id,
             )
@@ -666,6 +810,8 @@ async def chat(
     if active_dataset:
         prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
         prompt_metrics["xdr_pipeline_activated"] = xdr_activated
+        prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
+        prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
     if xdr_query_plan:
         prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
         prompt_metrics["xdr_query_description"] = xdr_query_plan.description
@@ -674,33 +820,10 @@ async def chat(
         prompt_metrics["xdr_query_result_rows"] = xdr_rows
         prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
         prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
+        prompt_metrics["xdr_raw_query_result_preview"] = str(xdr_rows[:3]) if xdr_rows else "[]"
 
     if data.use_uce and settings.uce_enabled:
-        xdr_schema_hints: list[dict] = []
-        if active_dataset:
-            try:
-                schema_query = (
-                    select(XdrFieldSchema)
-                    .where(XdrFieldSchema.is_active == True)
-                    .options(selectinload(XdrFieldSchema.keywords))
-                )
-                if active_dataset.schema_id:
-                    schema_query = schema_query.where(
-                        XdrFieldSchema.schema_id == active_dataset.schema_id
-                    )
-                schema_result = await db.execute(schema_query)
-                schema_fields = schema_result.scalars().all()
-                xdr_schema_hints = [
-                    {
-                        "field_name": f.field_name,
-                        "group": f.description or "",
-                        "aliases": [k.keyword for k in f.keywords],
-                    }
-                    for f in schema_fields
-                ]
-            except Exception:
-                logger.warning("xDR schema hints 로드 실패 (conv_id=%s)", conversation_id)
-
+        # xdr_schema_hints는 위 Slimming 단계에서 계산된 값 재사용
         rag_chunks = []
 
         selected_doc_ids = list(priority_doc_ids) if priority_doc_ids else list(
@@ -818,6 +941,8 @@ async def chat(
         if active_dataset:
             prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
             prompt_metrics["xdr_pipeline_activated"] = xdr_activated
+            prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
+            prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
         if xdr_query_plan:
             prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
             prompt_metrics["xdr_query_description"] = xdr_query_plan.description
@@ -826,6 +951,7 @@ async def chat(
             prompt_metrics["xdr_query_result_rows"] = xdr_rows
             prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
             prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
+            prompt_metrics["xdr_raw_query_result_preview"] = str(xdr_rows[:3]) if xdr_rows else "[]"
 
     async def generate():
         full_response = ""
