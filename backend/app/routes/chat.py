@@ -607,6 +607,7 @@ async def chat(
     xdr_rows: list[dict] = []
     xdr_execution_ms: int | None = None
     xdr_activated = False
+    xdr_pipeline_status = "SKIPPED (not_xdr)"
 
     # --- Context Slimming & Lightweight Activation ---
     xdr_schema_hints: list[dict] = []
@@ -702,29 +703,106 @@ async def chat(
                 for f in candidate_schema_fields
             ]
 
-            xdr_query_plan = await plan_query(
-                user_message=data.message,
-                dataset_id=active_dataset.dataset_id,
-                model=conv.model,
-                fields=slimmed_specs,
-                db=db,
-                schema_id=active_dataset.schema_id,
-            )
-            if xdr_query_plan.is_xdr_related:
-                xdr_activated = True
-                _xdr_exec_start = time.perf_counter()
-                xdr_rows = await execute_plan(xdr_query_plan, active_dataset.dataset_id)
-                xdr_execution_ms = int((time.perf_counter() - _xdr_exec_start) * 1000)
-                xdr_context = format_results(xdr_rows, xdr_query_plan, active_dataset.dataset_id)
-                logger.info(
-                    "xDR pipeline ACTIVATED: conv_id=%s dataset=%s intent=%s rows=%d confidence=%.2f",
-                    conversation_id, active_dataset.dataset_id,
-                    xdr_query_plan.intent, len(xdr_rows), xdr_query_plan.confidence,
-                )
+            # 1. xDR relevance detection 결과와 planner 실행 결과를 분리
+            xdr_keywords = {"통계", "집계", "에러", "오류", "실패", "원인", "장애", "가입자", "단말", "imsi", "imei", "추이", "비율", "건수", "조회", "분석", "비교"}
+            is_xdr_related = any(term in query_text for term in xdr_keywords)
+            
+            if is_xdr_related:
+                # 4. 단순 패턴 질의는 rule-based fallback SQL을 사용
+                fallback_sql = None
+                fallback_intent = None
+                if any(t in query_text for t in ("가입자", "imsi", "단말", "imei")) and any(t in query_text for t in ("에러", "오류", "실패", "장애", "원인")) and any(t in query_text for t in ("통계", "집계", "별")):
+                    group_col = "IMSI" if "imsi" in query_text or "가입자" in query_text else "IMEI"
+                    fallback_sql = f"SELECT {group_col}, first_error_interface_protocol, first_error_cause, COUNT(*) as cnt FROM {active_dataset.dataset_id} WHERE success_flag = 0 GROUP BY {group_col}, first_error_interface_protocol, first_error_cause ORDER BY cnt DESC LIMIT 50"
+                    fallback_intent = "group_by_error_stats"
+
+                try:
+                    if fallback_sql:
+                        xdr_query_plan = QueryPlan(
+                            is_xdr_related=True,
+                            intent=fallback_intent,
+                            sql=fallback_sql,
+                            description="Rule-based fallback pattern matched",
+                            confidence=1.0
+                        )
+                    else:
+                        # 5. SQL planner prompt에는 전체 대화/검색문서/전체 schema를 넣지 말고 candidate fields만 넣으세요.
+                        # 6. planner 출력은 JSON only로 제한하세요.
+                        prompt = (
+                            "다음 질문에 답하기 위해 DuckDB SQL 쿼리를 작성하세요.\n"
+                            "반드시 아래 JSON 형식으로만 응답하고 다른 설명은 하지 마세요.\n"
+                            "{\n"
+                            '  "intent": "의도 요약",\n'
+                            '  "sql": "작성된 SQL",\n'
+                            '  "description": "쿼리 설명"\n'
+                            "}\n\n"
+                            f"Target Table: {active_dataset.dataset_id}\n\n"
+                            "Candidate Fields:\n"
+                        )
+                        for spec in slimmed_specs:
+                            prompt += f"- {spec.name} ({spec.db_type}): {spec.description}\n"
+                        
+                        prompt += f"\n사용자 질문: {data.message}"
+
+                        llm_resp = await llm_chat(
+                            conv.model,
+                            [{"role": "user", "content": prompt}],
+                            options={"temperature": 0.0}
+                        )
+                        
+                        match = re.search(r'\{.*\}', llm_resp, re.DOTALL)
+                        if not match:
+                            raise ValueError("JSON 형식을 찾을 수 없습니다.")
+                            
+                        parsed = json.loads(match.group(0))
+                        if not parsed.get("sql"):
+                            raise ValueError("SQL이 비어있습니다.")
+                            
+                        xdr_query_plan = QueryPlan(
+                            is_xdr_related=True,
+                            intent=parsed.get("intent", "custom_sql"),
+                            sql=parsed.get("sql", ""),
+                            description=parsed.get("description", ""),
+                            confidence=0.8
+                        )
+
+                    xdr_activated = True
+                    _xdr_exec_start = time.perf_counter()
+                    xdr_rows = await execute_plan(xdr_query_plan, active_dataset.dataset_id)
+                    xdr_execution_ms = int((time.perf_counter() - _xdr_exec_start) * 1000)
+                    xdr_context = format_results(xdr_rows, xdr_query_plan, active_dataset.dataset_id)
+                    xdr_pipeline_status = "COMPLETED"
+                    logger.info(
+                        "xDR pipeline ACTIVATED: conv_id=%s dataset=%s intent=%s rows=%d confidence=%.2f",
+                        conversation_id, active_dataset.dataset_id,
+                        xdr_query_plan.intent, len(xdr_rows), xdr_query_plan.confidence,
+                    )
+                except Exception as e:
+                    # 2. relevance=true이면 planner 실패 시에도 FAILED(planner_error)로 표시
+                    xdr_pipeline_status = "FAILED (planner_error)"
+                    logger.error(f"xDR Planner execution failed: {e}")
+                    
+                    # 3. planner 실패 시 일반 문서 RAG로 fallback하지 않음
+                    rag_context = ""
+                    rag_references = []
+                    results = []
+                    all_results = []
+                    priority_doc_ids = set()
+                    
+                    xdr_context = f"xDR 분석 실패: 데이터 추출 계획을 생성하지 못했습니다. (사유: {e})"
+                    xdr_activated = False
+                    
+                    xdr_query_plan = QueryPlan(
+                        is_xdr_related=True,
+                        intent="planner_error",
+                        sql="",
+                        description=str(e),
+                        confidence=0.0
+                    )
             else:
                 logger.info(
-                    "xDR pipeline SKIPPED: conv_id=%s reason=%s confidence=%.2f",
-                    conversation_id, xdr_query_plan.intent, xdr_query_plan.confidence,
+                    "xDR pipeline SKIPPED: conv_id=%s reason=not_xdr",
+                    conversation_id
                 )
         except Exception:
             logger.exception("xDR Query Planning 실패 (conv_id=%s)", conversation_id)
@@ -810,6 +888,7 @@ async def chat(
     if active_dataset:
         prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
         prompt_metrics["xdr_pipeline_activated"] = xdr_activated
+        prompt_metrics["xdr_pipeline_status"] = xdr_pipeline_status
         prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
         prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
     if xdr_query_plan:
@@ -941,6 +1020,7 @@ async def chat(
         if active_dataset:
             prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
             prompt_metrics["xdr_pipeline_activated"] = xdr_activated
+            prompt_metrics["xdr_pipeline_status"] = xdr_pipeline_status
             prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
             prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
         if xdr_query_plan:
