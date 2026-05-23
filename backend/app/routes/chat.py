@@ -554,6 +554,7 @@ async def chat(
     xdr_rows: list[dict] = []
     xdr_execution_ms: int | None = None
     xdr_activated = False
+
     if active_dataset:
         try:
             fields = await asyncio.to_thread(load_lte_call_kpi_spec)
