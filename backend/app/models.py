@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Text, DateTime, ForeignKey, JSON, func
+from sqlalchemy import String, Text, DateTime, ForeignKey, JSON, UniqueConstraint, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.config import settings
 from app.database import Base
 
 
@@ -15,7 +16,7 @@ class Conversation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255), default="새 대화")
-    model: Mapped[str] = mapped_column(String(100), default="gemma4:26b")
+    model: Mapped[str] = mapped_column(String(100), default=lambda: settings.default_ollama_model)
     system_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -92,6 +93,7 @@ class RcaJob(Base):
     result_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     total_records: Mapped[Optional[int]] = mapped_column(nullable=True)
     parsed_records: Mapped[Optional[int]] = mapped_column(nullable=True)
+    schema_id: Mapped[Optional[int]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -114,3 +116,109 @@ class RcaResult(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     job: Mapped["RcaJob"] = relationship(back_populates="result")
+
+
+class ConversationDataset(Base):
+    """Many-to-many attachment between conversations and xDR datasets.
+
+    Detaching removes this row only — the dataset itself is preserved.
+    """
+    __tablename__ = "conversation_datasets"
+    __table_args__ = (UniqueConstraint("conversation_id", "dataset_id", name="uq_conv_dataset"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
+    dataset_id: Mapped[str] = mapped_column(String(255))
+    is_primary: Mapped[bool] = mapped_column(default=True)
+    attached_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class RcaDataset(Base):
+    __tablename__ = "rca_datasets"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    dataset_id: Mapped[str] = mapped_column(String(255), unique=True)
+    job_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    conversation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True
+    )
+    filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    file_size: Mapped[int] = mapped_column(default=0)
+    record_count: Mapped[int] = mapped_column(default=0)
+    parsed_records: Mapped[int] = mapped_column(default=0)
+    period_start: Mapped[Optional[int]] = mapped_column(nullable=True)
+    period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="PROCESSING")
+    error_message: Mapped[Optional[str]] = mapped_column(LONG_TEXT, nullable=True)
+    schema_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class XdrSchemaProfile(Base):
+    __tablename__ = "xdr_schema_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_default: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    fields: Mapped[list["XdrFieldSchema"]] = relationship(
+        back_populates="schema",
+        cascade="all, delete-orphan",
+    )
+
+
+class XdrFieldSchema(Base):
+    __tablename__ = "xdr_field_schema"
+    __table_args__ = (
+        UniqueConstraint("schema_id", "field_name", name="uq_xdr_schema_field_name"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    schema_id: Mapped[int] = mapped_column(ForeignKey("xdr_schema_profiles.id", ondelete="CASCADE"))
+    field_name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    is_custom: Mapped[bool] = mapped_column(default=False)
+    spec_no: Mapped[Optional[int]] = mapped_column(nullable=True)
+    spec_index: Mapped[Optional[int]] = mapped_column(nullable=True)
+    spec_sheet: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    spec_section: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    tree_path: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    role: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    db_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    size: Mapped[Optional[int]] = mapped_column(nullable=True)
+    importance: Mapped[str] = mapped_column(String(20), default="low")
+    groupable: Mapped[bool] = mapped_column(default=False)
+    filterable: Mapped[bool] = mapped_column(default=False)
+    searchable: Mapped[bool] = mapped_column(default=False)
+    joinable: Mapped[bool] = mapped_column(default=False)
+    pii: Mapped[bool] = mapped_column(default=False)
+    sortable: Mapped[bool] = mapped_column(default=False)
+    time_series: Mapped[bool] = mapped_column(default=False)
+    categorical: Mapped[bool] = mapped_column(default=False)
+    boolean_like: Mapped[bool] = mapped_column(default=False)
+    semantic_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    schema: Mapped["XdrSchemaProfile"] = relationship(back_populates="fields")
+    keywords: Mapped[list["XdrFieldKeyword"]] = relationship(
+        back_populates="field",
+        cascade="all, delete-orphan",
+    )
+
+
+class XdrFieldKeyword(Base):
+    __tablename__ = "xdr_field_keywords"
+    __table_args__ = (
+        UniqueConstraint("field_id", "keyword", name="uq_field_keyword"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    field_id: Mapped[int] = mapped_column(ForeignKey("xdr_field_schema.id", ondelete="CASCADE"))
+    keyword: Mapped[str] = mapped_column(String(100))
+
+    field: Mapped["XdrFieldSchema"] = relationship(back_populates="keywords")

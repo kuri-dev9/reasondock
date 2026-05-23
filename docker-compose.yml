@@ -52,6 +52,7 @@ services:
       - knowledge_data:/app/knowledge_data
       - xdr_uploads:/app/xdr_uploads
       - rca_results:/app/rca_results
+      - rca_datasets:/app/rca_datasets
     depends_on:
       mysql:
         condition: service_healthy
@@ -102,3 +103,4 @@ volumes:
   knowledge_data:
   xdr_uploads:
   rca_results:
+  rca_datasets:

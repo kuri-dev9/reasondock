@@ -22,7 +22,9 @@ REL_NS = {"rel": "http://schemas.openxmlformats.org/package/2006/relationships"}
 class FieldSpec:
     no: int
     index: int
+    sheet_name: str
     section: str
+    tree_path: tuple[str, ...]
     name: str
     collect_type: str
     description: str
@@ -99,22 +101,36 @@ def load_lte_call_kpi_spec() -> tuple[FieldSpec, ...]:
             "XDR spec not found. Tried: " + ", ".join(str(path) for path in candidates)
         )
 
+    rows = _xlsx_rows(spec_path, SHEET_NAME)
+    header = rows[3]
+    no_index = next((idx for idx, value in enumerate(header) if value == "No."), 0)
+    name_index = next((idx for idx, value in enumerate(header) if value == "Name"), 4)
+    hierarchy_indexes = list(range(no_index + 1, name_index))
+
     fields: list[FieldSpec] = []
-    current_section = ""
-    for row in _xlsx_rows(spec_path, SHEET_NAME)[4:]:
+    current_path: list[str] = [""] * len(hierarchy_indexes)
+    for row in rows[4:]:
         if not row or not row[0]:
             continue
         no = int(float(row[0]))
-        section = row[1] or current_section
-        current_section = section
-        name = row[4] if len(row) > 4 and row[4] else f"Reserved_{no}"
+        for path_pos, column_index in enumerate(hierarchy_indexes):
+            value = row[column_index] if len(row) > column_index else None
+            if value:
+                current_path[path_pos] = value
+                for deeper in range(path_pos + 1, len(current_path)):
+                    current_path[deeper] = ""
+        tree_path = tuple(part for part in current_path if part)
+        section = tree_path[0] if tree_path else ""
+        name = row[name_index] if len(row) > name_index and row[name_index] else f"Reserved_{no}"
         collect_type = row[7] if len(row) > 7 and row[7] else "string"
         description = row[10] if len(row) > 10 and row[10] else ""
         fields.append(
             FieldSpec(
                 no=no,
                 index=no - 1,
+                sheet_name=SHEET_NAME,
                 section=section,
+                tree_path=tree_path,
                 name=name,
                 collect_type=collect_type,
                 description=description,

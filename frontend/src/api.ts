@@ -1,4 +1,4 @@
-import { PromptMetrics, RcaAnalyzeResponse, RcaStreamEvent, Reference, SearchResult } from './types';
+import { ConversationDataset, PromptMetrics, RcaAnalyzeResponse, RcaDataset, RcaStreamEvent, Reference, SearchResult, XdrFieldSchema, XdrSchemaProfile } from './types';
 
 const API_BASE = '/api';
 
@@ -78,10 +78,11 @@ export async function deleteAttachment(conversationId: number, attachmentId: num
   });
 }
 
-export async function uploadRcaFile(conversationId: number, file: File, useUce = false): Promise<RcaAnalyzeResponse> {
+export async function uploadRcaFile(conversationId: number, file: File, useUce = false, schemaId?: number | null): Promise<RcaAnalyzeResponse> {
   const formData = new FormData();
   formData.append('conversation_id', String(conversationId));
   formData.append('use_uce', String(useUce));
+  if (schemaId) formData.append('schema_id', String(schemaId));
   formData.append('file', file);
   const res = await fetch(`${API_BASE}/rca/jobs`, {
     method: 'POST',
@@ -91,6 +92,97 @@ export async function uploadRcaFile(conversationId: number, file: File, useUce =
     throw new Error(await readError(res, 'RCA 분석 실패'));
   }
   return res.json();
+}
+
+// xDR Field Schema Profiles
+export async function fetchXdrSchemaProfiles(): Promise<XdrSchemaProfile[]> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles`);
+  if (!res.ok) throw new Error(await readError(res, 'xDR 스키마 목록 로드 실패'));
+  return res.json();
+}
+
+export async function fetchActiveXdrSchemaProfile(): Promise<XdrSchemaProfile> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles/active`);
+  if (!res.ok) throw new Error(await readError(res, '활성 xDR 스키마 로드 실패'));
+  return res.json();
+}
+
+export async function setActiveXdrSchema(schemaId: number): Promise<XdrSchemaProfile> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles/${schemaId}/active`, { method: 'PATCH' });
+  if (!res.ok) throw new Error(await readError(res, '활성 xDR 스키마 설정 실패'));
+  return res.json();
+}
+
+export async function createXdrSchemaProfile(name: string, sourceSchemaId: number, description?: string): Promise<XdrSchemaProfile> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, source_schema_id: sourceSchemaId, description: description || null }),
+  });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 스키마 저장 실패'));
+  return res.json();
+}
+
+export async function updateXdrSchemaProfile(schemaId: number, data: { name?: string; description?: string | null }): Promise<XdrSchemaProfile> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles/${schemaId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 스키마 수정 실패'));
+  return res.json();
+}
+
+export async function deleteXdrSchemaProfile(schemaId: number): Promise<{ deleted: number; deleted_datasets: string[] }> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/profiles/${schemaId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 스키마 삭제 실패'));
+  return res.json();
+}
+
+export async function fetchXdrFields(schemaId?: number | null): Promise<XdrFieldSchema[]> {
+  const suffix = schemaId ? `?schema_id=${encodeURIComponent(schemaId)}` : '';
+  const res = await fetch(`${API_BASE}/rca/xdr-schema${suffix}`);
+  if (!res.ok) throw new Error(await readError(res, 'xDR 필드 로드 실패'));
+  return res.json();
+}
+
+export async function addXdrField(schemaId: number, fieldName: string, description?: string): Promise<XdrFieldSchema> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema_id: schemaId, field_name: fieldName, description: description || null }),
+  });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 필드 추가 실패'));
+  return res.json();
+}
+
+export async function updateXdrField(fieldId: number, data: Partial<XdrFieldSchema>): Promise<XdrFieldSchema> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/${fieldId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 필드 수정 실패'));
+  return res.json();
+}
+
+export async function deleteXdrField(fieldId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/${fieldId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await readError(res, 'xDR 필드 삭제 실패'));
+}
+
+export async function addXdrKeyword(fieldId: number, keyword: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/${fieldId}/keywords`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keyword }),
+  });
+  if (!res.ok) throw new Error(await readError(res, 'alias 추가 실패'));
+}
+
+export async function deleteXdrKeyword(fieldId: number, keyword: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/xdr-schema/${fieldId}/keywords/${encodeURIComponent(keyword)}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await readError(res, 'alias 삭제 실패'));
 }
 
 export function streamRcaJob(
@@ -112,6 +204,61 @@ export function streamRcaJob(
     source.close();
   };
   return source;
+}
+
+// RCA Datasets
+export async function fetchRcaDatasets(): Promise<RcaDataset[]> {
+  const res = await fetch(`${API_BASE}/rca/datasets`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchRcaDataset(datasetId: string): Promise<RcaDataset | null> {
+  const res = await fetch(`${API_BASE}/rca/datasets/${datasetId}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchRcaDatasetSummary(datasetId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rca/datasets/${datasetId}/summary`);
+  if (!res.ok) throw new Error('데이터셋 통계 로드 실패');
+  return res.json();
+}
+
+export async function deleteRcaDataset(datasetId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/datasets/${datasetId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(await readError(res, '데이터셋 삭제 실패'));
+}
+
+// Conversation Dataset Attachments
+export async function fetchConversationDatasets(conversationId: number): Promise<ConversationDataset[]> {
+  const res = await fetch(`${API_BASE}/rca/conversations/${conversationId}/datasets`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function attachDataset(conversationId: number, datasetId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/conversations/${conversationId}/datasets/${datasetId}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(await readError(res, '데이터셋 첨부 실패'));
+}
+
+export async function detachDataset(conversationId: number, datasetId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/rca/conversations/${conversationId}/datasets/${datasetId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(await readError(res, '데이터셋 분리 실패'));
+}
+
+export async function setPrimaryDataset(conversationId: number, datasetId: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/rca/conversations/${conversationId}/datasets/${datasetId}/primary`,
+    { method: 'PATCH' },
+  );
+  if (!res.ok) throw new Error(await readError(res, '주 데이터셋 설정 실패'));
 }
 
 // Knowledge Base
@@ -232,13 +379,18 @@ export function streamChat(
   onDone: (title?: string, references?: Reference[], metadata?: PromptMetrics) => void,
   onError: (err: string) => void,
   onThinking?: (token: string) => void,
+  datasetId?: string | null,
 ) {
   const controller = new AbortController();
 
   fetch(`${API_BASE}/conversations/${conversationId}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, use_uce: useUce }),
+    body: JSON.stringify({
+      message,
+      use_uce: useUce,
+      ...(datasetId ? { dataset_id: datasetId } : {}),
+    }),
     signal: controller.signal,
   }).then(async (response) => {
     const reader = response.body?.getReader();

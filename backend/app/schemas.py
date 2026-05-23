@@ -1,5 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.config import settings
 
 
 class MessageBase(BaseModel):
@@ -20,7 +22,7 @@ class MessageResponse(MessageBase):
 
 class ConversationCreate(BaseModel):
     title: str = "새 대화"
-    model: str = "gemma4:26b"
+    model: str = Field(default_factory=lambda: settings.default_ollama_model)
     system_prompt: str | None = None
 
 
@@ -49,6 +51,7 @@ class ConversationDetailResponse(ConversationResponse):
 class ChatRequest(BaseModel):
     message: str
     use_uce: bool = False
+    dataset_id: str | None = None
 
     @field_validator("message")
     @classmethod
@@ -87,7 +90,7 @@ class ConversationExport(BaseModel):
 
 class ConversationImport(BaseModel):
     title: str
-    model: str = "gemma4:26b"
+    model: str = Field(default_factory=lambda: settings.default_ollama_model)
     system_prompt: str | None = None
     messages: list[MessageBase] = []
 

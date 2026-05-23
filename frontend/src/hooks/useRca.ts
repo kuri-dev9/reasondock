@@ -31,7 +31,8 @@ export function useRca({
   const handleRcaUpload = async (
     file: File,
     convId: number,
-    useUce: boolean
+    useUce: boolean,
+    schemaId?: number | null,
   ) => {
     const userMsg: Message = {
       id: Date.now(),
@@ -49,7 +50,7 @@ export function useRca({
     setThinkingContent('');
 
     try {
-      const response = await uploadRcaFile(convId, file, useUce);
+      const response = await uploadRcaFile(convId, file, useUce, schemaId);
       const source = streamRcaJob(
         response.job.id,
         (event) => {

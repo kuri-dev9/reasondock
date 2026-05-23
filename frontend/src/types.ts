@@ -50,6 +50,14 @@ export interface PromptMetrics {
   model?: string | null;
   response_tokens?: number | null;
   response_chars?: number | null;
+  // xDR 데이터셋 조사
+  xdr_dataset_id?: string | null;
+  xdr_query_intent?: string | null;
+  xdr_query_description?: string | null;
+  xdr_query_sql?: string | null;
+  xdr_query_row_count?: number | null;
+  xdr_query_result_rows?: any[] | null;
+  xdr_query_execution_ms?: number | null;
 }
 
 export interface RcaProcessingMetrics {
@@ -132,6 +140,70 @@ export interface SearchResult {
   role: string;
   content_snippet: string;
   created_at: string;
+}
+
+export interface ConversationDataset extends RcaDataset {
+  is_primary: boolean;
+  attached_at?: string;
+}
+
+export interface RcaDataset {
+  id?: number;
+  dataset_id: string;
+  job_id?: number | null;
+  conversation_id?: number | null;
+  filename?: string | null;
+  file_size?: number;
+  record_count?: number;
+  parsed_records?: number;
+  period_start?: number | null;
+  period_end?: number | null;
+  status: 'PROCESSING' | 'READY' | 'ERROR';
+  error_message?: string | null;
+  schema_id?: number | null;
+  schema_name?: string | null;
+  created_at?: string;
+}
+
+export interface XdrSchemaProfile {
+  id: number;
+  name: string;
+  description?: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  dataset_count: number;
+  created_at?: string | null;
+}
+
+export interface XdrFieldSchema {
+  id: number;
+  schema_id: number;
+  field_name: string;
+  description?: string | null;
+  is_active: boolean;
+  is_custom: boolean;
+  spec_no?: number | null;
+  spec_index?: number | null;
+  spec_sheet?: string | null;
+  spec_section?: string | null;
+  tree_path?: string[] | null;
+  category?: string | null;
+  role?: string | null;
+  db_type?: string | null;
+  size?: number | null;
+  importance?: 'critical' | 'high' | 'medium' | 'low' | string;
+  groupable?: boolean;
+  filterable?: boolean;
+  searchable?: boolean;
+  joinable?: boolean;
+  pii?: boolean;
+  sortable?: boolean;
+  time_series?: boolean;
+  categorical?: boolean;
+  boolean_like?: boolean;
+  semantic_metadata?: Record<string, any> | null;
+  keywords: string[];
+  aliases?: string[];
 }
 
 export interface RcaJob {

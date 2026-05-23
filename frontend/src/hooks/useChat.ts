@@ -22,7 +22,7 @@ export function useChat({
 }: UseChatOptions) {
   const abortRef = useRef<AbortController | null>(null);
 
-  const sendMessage = (convId: number, message: string, useUce: boolean) => {
+  const sendMessage = (convId: number, message: string, useUce: boolean, datasetId?: string | null) => {
     const userMsg: Message = {
       id: Date.now(),
       conversation_id: convId,
@@ -78,7 +78,9 @@ export function useChat({
         setStreaming(false);
         abortRef.current = null;
         if (err !== 'AbortError') alert(`오류: ${err}`);
-      }
+      },
+      undefined,  // onThinking (unused here)
+      datasetId,
     );
     abortRef.current = controller;
   };

@@ -6,13 +6,15 @@ import ModelSelector from './components/ModelSelector';
 import ThemeToggle from './components/ThemeToggle';
 import ThinkingIndicator from './components/ThinkingIndicator';
 import KnowledgePanel from './components/KnowledgePanel';
+import RcaDatasetPanel from './components/RcaDatasetPanel';
+import XdrSchemaPanel from './components/XdrSchemaPanel';
 import SystemPromptEditor from './components/SystemPromptEditor';
 import { useConversations } from './hooks/useConversations';
 import { useAttachments } from './hooks/useAttachments';
 import { useChat } from './hooks/useChat';
 import { useRca } from './hooks/useRca';
-import { Message } from './types';
-import { createConversation, fetchKnowledgeDocs, uploadAttachment } from './api';
+import { Message, XdrSchemaProfile } from './types';
+import { createConversation, fetchActiveXdrSchemaProfile, fetchKnowledgeDocs, uploadAttachment } from './api';
 import './App.css';
 
 function App() {
@@ -25,6 +27,10 @@ function App() {
   const [dark, setDark] = useState(false);
   const [useUce, setUseUce] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [rcaDatasetPanelOpen, setRcaDatasetPanelOpen] = useState(false);
+  const [xdrSchemaPanelOpen, setXdrSchemaPanelOpen] = useState(false);
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
+  const [selectedXdrSchema, setSelectedXdrSchema] = useState<XdrSchemaProfile | null>(null);
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dropActive, setDropActive] = useState(false);
@@ -109,6 +115,11 @@ function App() {
   }, [dark]);
   useEffect(() => { loadConversations(); loadModels(); }, []);
   useEffect(() => {
+    fetchActiveXdrSchemaProfile()
+      .then(setSelectedXdrSchema)
+      .catch(() => setSelectedXdrSchema(null));
+  }, []);
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
   useEffect(() => {
@@ -135,9 +146,9 @@ function App() {
       setConversations((prev) => [conv, ...prev]);
       setActiveConvId(conv.id);
       setMessages([]);
-      sendMessage(conv.id, message, useUce);
+      sendMessage(conv.id, message, useUce, selectedDatasetId);
     } else {
-      sendMessage(activeConvId, message, useUce);
+      sendMessage(activeConvId, message, useUce, selectedDatasetId);
     }
   };
 
@@ -179,7 +190,7 @@ function App() {
     } else {
       convId = activeConvId;
     }
-    await _handleRcaUpload(file, convId, useUce);
+    await _handleRcaUpload(file, convId, useUce, selectedXdrSchema?.id || null);
   };
 
   // ── Render ───────────────────────────────────────────────────
@@ -214,6 +225,22 @@ function App() {
             </button>
             <button className="knowledge-btn" onClick={() => setKnowledgeOpen(true)} title="지식 저장소">
               <img src="/document_icon.svg" alt="" className="btn-icon" /> 지식 저장소
+            </button>
+            <button
+              className={`header-btn${selectedDatasetId ? ' rca-dataset-active' : ''}`}
+              onClick={() => setRcaDatasetPanelOpen(true)}
+              title={selectedDatasetId ? `활성 데이터셋: ${selectedDatasetId}` : 'RCA 데이터셋'}
+            >
+              🔍 {selectedDatasetId
+                ? <span className="rca-active-badge">{selectedDatasetId.length > 20 ? selectedDatasetId.slice(0, 20) + '…' : selectedDatasetId}</span>
+                : '데이터셋'}
+            </button>
+            <button
+              className={`header-btn${selectedXdrSchema?.is_active ? ' rca-dataset-active' : ''}`}
+              onClick={() => setXdrSchemaPanelOpen(true)}
+              title={selectedXdrSchema ? `현재 xDR 스키마: ${selectedXdrSchema.name}` : 'xDR 스키마'}
+            >
+              스키마 {selectedXdrSchema ? <span className="rca-active-badge">{selectedXdrSchema.name}</span> : ''}
             </button>
             <ThemeToggle dark={dark} onToggle={() => setDark(!dark)} />
           </div>
@@ -277,6 +304,19 @@ function App() {
       </main>
 
       <KnowledgePanel visible={knowledgeOpen} onClose={() => setKnowledgeOpen(false)} />
+      <RcaDatasetPanel
+        visible={rcaDatasetPanelOpen}
+        onClose={() => setRcaDatasetPanelOpen(false)}
+        conversationId={activeConvId}
+        selectedDatasetId={selectedDatasetId}
+        onSelectDataset={setSelectedDatasetId}
+      />
+      <XdrSchemaPanel
+        visible={xdrSchemaPanelOpen}
+        onClose={() => setXdrSchemaPanelOpen(false)}
+        selectedSchemaId={selectedXdrSchema?.id || null}
+        onSchemaChange={setSelectedXdrSchema}
+      />
       <SystemPromptEditor
         visible={systemPromptOpen}
         systemPrompt={currentSystemPrompt}

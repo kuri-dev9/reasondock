@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -10,12 +11,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.config import settings
-from app.models import Conversation, Message, Attachment, KnowledgeDocument
+from app.models import Conversation, ConversationDataset, Message, Attachment, KnowledgeDocument, RcaDataset
 from app.schemas import ChatRequest
 from app.services.llm import LLMError, chat as llm_chat, stream_chat
 from app.services import uce_client
 from app import vector_store
 from app.tokenizer import tokenize as _tokenize
+from app.rca.query_planner import QueryPlan, plan_query, execute_plan, format_results
+from app.rca.spec_loader import load_lte_call_kpi_spec
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -407,6 +410,36 @@ async def chat(
     if not conv:
         raise HTTPException(status_code=404, detail="대화를 찾을 수 없습니다")
 
+    # 데이터셋 조회 우선순위:
+    # 1. 프론트에서 명시적으로 선택한 dataset_id (전역 선택)
+    # 2. 현재 대화의 primary 첨부 데이터셋
+    # Never fall back to a global search — prevents cross-investigation contamination.
+    active_dataset: RcaDataset | None = None
+    attached_datasets: list[RcaDataset] = []
+    try:
+        if data.dataset_id:
+            ds_res = await db.execute(
+                select(RcaDataset).where(
+                    RcaDataset.dataset_id == data.dataset_id,
+                    RcaDataset.status == "READY",
+                )
+            )
+            active_dataset = ds_res.scalar_one_or_none()
+        else:
+            att_result = await db.execute(
+                select(RcaDataset)
+                .join(ConversationDataset, ConversationDataset.dataset_id == RcaDataset.dataset_id)
+                .where(
+                    ConversationDataset.conversation_id == conversation_id,
+                    RcaDataset.status == "READY",
+                )
+                .order_by(ConversationDataset.is_primary.desc(), ConversationDataset.attached_at.desc())
+            )
+            attached_datasets = list(att_result.scalars().all())
+            active_dataset = attached_datasets[0] if attached_datasets else None
+    except Exception:
+        logger.warning("데이터셋 조회 실패 (conv_id=%s)", conversation_id)
+
     is_first_message = len(conv.messages) == 0
 
     user_message = Message(
@@ -514,10 +547,44 @@ async def chat(
             context_parts.append(f"[첨부파일: {att.filename}]\n{att.content_text[:8000]}")
         attachment_context = "\n\n".join(context_parts)
 
+    # xDR 데이터셋 Query Planning (legacy path용 컨텍스트 구성)
+    xdr_context = ""
+    xdr_query_plan: QueryPlan | None = None
+    xdr_rows: list[dict] = []
+    xdr_execution_ms: int | None = None
+    if active_dataset:
+        try:
+            fields = await asyncio.to_thread(load_lte_call_kpi_spec)
+            xdr_query_plan = await plan_query(
+                user_message=data.message,
+                dataset_id=active_dataset.dataset_id,
+                model=conv.model,
+                fields=fields,
+                db=db,
+                schema_id=active_dataset.schema_id,
+            )
+            if xdr_query_plan:
+                _xdr_exec_start = time.perf_counter()
+                xdr_rows = await execute_plan(xdr_query_plan, active_dataset.dataset_id)
+                xdr_execution_ms = int((time.perf_counter() - _xdr_exec_start) * 1000)
+                xdr_context = format_results(xdr_rows, xdr_query_plan, active_dataset.dataset_id)
+                logger.info(
+                    "xDR query: conv_id=%s dataset=%s intent=%s rows=%d exec_ms=%d",
+                    conversation_id, active_dataset.dataset_id, xdr_query_plan.intent,
+                    len(xdr_rows), xdr_execution_ms,
+                )
+        except Exception:
+            logger.exception("xDR Query Planning 실패 (conv_id=%s)", conversation_id)
+
     # 시스템 프롬프트 구성
     system_parts = []
     if conv.system_prompt:
         system_parts.append(conv.system_prompt)
+    if xdr_context:
+        system_parts.append(
+            "다음은 xDR 데이터셋에서 조회된 텔레콤 레코드입니다. "
+            "이 데이터를 기반으로 정확하게 답변하세요.\n\n" + xdr_context
+        )
     if rag_context:
         system_parts.append(
             "다음은 지식 저장소에서 검색된 관련 문서 내용입니다. "
@@ -587,6 +654,15 @@ async def chat(
         survived_items=legacy_survived_items,
         dropped_items=legacy_dropped_items,
     )
+    if active_dataset:
+        prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+    if xdr_query_plan:
+        prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
+        prompt_metrics["xdr_query_description"] = xdr_query_plan.description
+        prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql
+        prompt_metrics["xdr_query_row_count"] = len(xdr_rows)
+        prompt_metrics["xdr_query_result_rows"] = xdr_rows
+        prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
 
     if data.use_uce and settings.uce_enabled:
         rag_chunks = []
@@ -644,11 +720,23 @@ async def chat(
                     "importance": 0.9,
                 }
             )
+        # xDR 쿼리 결과를 rag_chunks 맨 앞에 삽입 (최우선 컨텍스트)
+        if xdr_context and active_dataset:
+            rag_chunks.insert(0, {
+                "id": "xdr_query_result",
+                "title": f"xDR 조사 결과: {active_dataset.dataset_id}",
+                "content": xdr_context,
+                "source": "xdr_dataset",
+                "importance": 0.95,
+                "content_type": "text",
+            })
+
         logger.info(
-            "UCE rag_chunks detail: total=%d (from all_results=%d, attachments=%d)",
+            "UCE rag_chunks detail: total=%d (from all_results=%d, attachments=%d, xdr=%d)",
             len(rag_chunks),
             len(all_results),
             len(conv.attachments or []),
+            1 if xdr_context else 0,
         )
         if not rag_chunks:
             logger.warning(
@@ -689,6 +777,16 @@ async def chat(
             prompt_metrics["uce_fallback_reason"] = str(exc)
             prompt_metrics["backend_retrieval_query"] = knowledge_query
             prompt_metrics["backend_query_rewrite_applied"] = backend_query_rewrite_applied
+        # Preserve xDR fields regardless of whether UCE succeeded or fell back
+        if active_dataset:
+            prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+        if xdr_query_plan:
+            prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
+            prompt_metrics["xdr_query_description"] = xdr_query_plan.description
+            prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql
+            prompt_metrics["xdr_query_row_count"] = len(xdr_rows)
+            prompt_metrics["xdr_query_result_rows"] = xdr_rows
+            prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
 
     async def generate():
         full_response = ""

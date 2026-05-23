@@ -259,6 +259,11 @@ function ChatDebugPanel({ metrics }: { metrics: PromptMetrics }) {
     ['응답 토큰 (추정)', metrics.response_tokens?.toLocaleString() ?? '-'],
     ['응답 글자 수', metrics.response_chars?.toLocaleString() ?? '-'],
     ['토큰/초', formatTokensPerSec()],
+    ['xDR 데이터셋', metrics.xdr_dataset_id ?? '-'],
+    ['xDR 쿼리 의도', metrics.xdr_query_intent ?? '-'],
+    ['xDR 쿼리 설명', metrics.xdr_query_description ?? '-'],
+    ['xDR SQL', metrics.xdr_query_sql ?? '-'],
+    ['xDR 결과 건수', metrics.xdr_query_row_count?.toString() ?? '-'],
   ];
 
   return (
@@ -413,6 +418,162 @@ function RcaDebugPanel({ rca, promptMetrics }: { rca: RcaProcessingMetrics; prom
   );
 }
 
+function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
+  const [open, setOpen] = useState(false);
+  const [sqlOpen, setSqlOpen] = useState(false);
+  const [rowsOpen, setRowsOpen] = useState(false);
+  const [uceOpen, setUceOpen] = useState(false);
+  const [finalPromptOpen, setFinalPromptOpen] = useState(false);
+
+  if (!metrics.xdr_dataset_id) return null;
+
+  const resultRows: Record<string, unknown>[] = metrics.xdr_query_result_rows ?? [];
+  const columns = resultRows.length > 0 ? Object.keys(resultRows[0]) : [];
+
+  return (
+    <div className="rca-inv-panel">
+      <button className="rca-inv-toggle" onClick={() => setOpen(!open)}>
+        🔍 RCA 조사 파이프라인 {open ? '접기' : '보기'}
+      </button>
+      {open && (
+        <div className="rca-inv-body">
+          {/* 1. Dataset Selection */}
+          <div className="rca-inv-section">
+            <div className="rca-inv-section-title">1. 데이터셋 선택</div>
+            <table className="rca-inv-kv-table">
+              <tbody>
+                <tr><th>활성 데이터셋</th><td className="rca-inv-mono">{metrics.xdr_dataset_id}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 2. Planner Result */}
+          {(metrics.xdr_query_intent || metrics.xdr_query_description) && (
+            <div className="rca-inv-section">
+              <div className="rca-inv-section-title">2. 쿼리 플래너 결과</div>
+              <table className="rca-inv-kv-table">
+                <tbody>
+                  {metrics.xdr_query_intent && (
+                    <tr><th>의도 (intent)</th><td>{metrics.xdr_query_intent}</td></tr>
+                  )}
+                  {metrics.xdr_query_description && (
+                    <tr><th>설명</th><td>{metrics.xdr_query_description}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 3. Generated SQL */}
+          {metrics.xdr_query_sql && (
+            <div className="rca-inv-section">
+              <div className="rca-inv-section-title">3. 생성된 SQL</div>
+              <button className="rca-inv-expand-btn" onClick={() => setSqlOpen(!sqlOpen)}>
+                {sqlOpen ? '▲ SQL 접기' : '▼ SQL 보기'}
+              </button>
+              {sqlOpen && <pre className="rca-inv-sql">{metrics.xdr_query_sql}</pre>}
+            </div>
+          )}
+
+          {/* 4. Execution Metadata */}
+          <div className="rca-inv-section">
+            <div className="rca-inv-section-title">4. 쿼리 실행 메타데이터</div>
+            <table className="rca-inv-kv-table">
+              <tbody>
+                <tr>
+                  <th>실행 시간</th>
+                  <td>{metrics.xdr_query_execution_ms != null ? `${metrics.xdr_query_execution_ms} ms` : '-'}</td>
+                </tr>
+                <tr>
+                  <th>결과 건수</th>
+                  <td>{metrics.xdr_query_row_count?.toLocaleString() ?? '-'}건</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 5. Raw Query Result */}
+          <div className="rca-inv-section">
+            <div className="rca-inv-section-title">5. 원시 쿼리 결과</div>
+            {resultRows.length === 0 ? (
+              <div className="rca-inv-empty">결과 없음</div>
+            ) : (
+              <>
+                <button className="rca-inv-expand-btn" onClick={() => setRowsOpen(!rowsOpen)}>
+                  {rowsOpen ? '▲ 결과 접기' : `▼ 결과 보기 (${resultRows.length}건)`}
+                </button>
+                {rowsOpen && (
+                  <div className="rca-inv-table-scroll">
+                    <table className="rca-inv-result-table">
+                      <thead>
+                        <tr>{columns.map((col) => <th key={col}>{col}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        {resultRows.map((row, i) => (
+                          <tr key={i}>
+                            {columns.map((col) => (
+                              <td key={col}>{row[col] != null ? String(row[col]) : '-'}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 6. UCE Compression */}
+          {metrics.use_uce && (
+            <div className="rca-inv-section">
+              <div className="rca-inv-section-title">6. UCE 압축 현황</div>
+              <button className="rca-inv-expand-btn" onClick={() => setUceOpen(!uceOpen)}>
+                {uceOpen ? '▲ UCE 접기' : '▼ UCE 압축 상세 보기'}
+              </button>
+              {uceOpen && (
+                <>
+                  <table className="rca-inv-kv-table">
+                    <tbody>
+                      <tr>
+                        <th>압축률</th>
+                        <td>{metrics.compression_ratio != null ? `${(metrics.compression_ratio * 100).toFixed(1)}%` : '-'}</td>
+                      </tr>
+                      <tr><th>선택 섹션</th><td>{metrics.selected_context_count?.toString() ?? '-'}</td></tr>
+                      <tr><th>제외 섹션</th><td>{metrics.dropped_context_count?.toString() ?? '-'}</td></tr>
+                      <tr>
+                        <th>UCE 빌드 시간</th>
+                        <td>{metrics.build_context_latency_ms != null ? `${metrics.build_context_latency_ms} ms` : '-'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {((metrics.survived_items?.length || 0) > 0 || (metrics.dropped_items?.length || 0) > 0) && (
+                    <div className="context-debug">
+                      {renderContextItems('선택 컨텍스트', metrics.survived_items || [], '선택된 컨텍스트가 없습니다.', 'selected')}
+                      {renderContextItems('제외 컨텍스트', metrics.dropped_items || [], '제외된 컨텍스트가 없습니다.', 'excluded')}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 7. Final Context */}
+          {metrics.final_prompt && (
+            <div className="rca-inv-section">
+              <div className="rca-inv-section-title">7. 최종 컨텍스트 (LLM 입력)</div>
+              <button className="rca-inv-expand-btn" onClick={() => setFinalPromptOpen(!finalPromptOpen)}>
+                {finalPromptOpen ? '▲ 접기' : '▼ Final Prompt 보기'}
+              </button>
+              {finalPromptOpen && <pre className="final-prompt-content">{metrics.final_prompt}</pre>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ChatMessage({ role, content, references, metrics }: Props) {
   const debugEnabled = process.env.REACT_APP_UCE_DEBUG === 'true';
   const rcaDebugEnabled = process.env.REACT_APP_RCA_DEBUG === 'true';
@@ -430,7 +591,7 @@ export default function ChatMessage({ role, content, references, metrics }: Prop
       </div>
       <div className="message-content">
         <div
-          className={`message-body${isLong && !expanded ? ' message-collapsed' : ''}`}
+          className={`message-body${role === 'assistant' ? ' markdown-body' : ''}${isLong && !expanded ? ' message-collapsed' : ''}`}
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -472,6 +633,7 @@ export default function ChatMessage({ role, content, references, metrics }: Prop
         )}
         {debugEnabled && role === 'assistant' && metrics && !metrics.rca_processing && <UceDebugPanel metrics={metrics} />}
         {chatDebugEnabled && role === 'assistant' && metrics && !metrics.rca_processing && <ChatDebugPanel metrics={metrics} />}
+        {chatDebugEnabled && role === 'assistant' && metrics?.xdr_dataset_id && <RcaInvestigationDebugPanel metrics={metrics} />}
         {rcaDebugEnabled && role === 'assistant' && metrics?.rca_processing && (
           <RcaDebugPanel rca={metrics.rca_processing} promptMetrics={metrics} />
         )}

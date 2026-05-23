@@ -14,10 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import async_session, get_db
-from app.models import Conversation, Message, RcaJob, RcaResult
+from app.models import Conversation, ConversationDataset, Message, RcaDataset, RcaJob, RcaResult, XdrSchemaProfile
+from app.rca import dataset_manager
+from app.rca.duckdb_store import make_dataset_id
 from app.rca.llm_gate import should_invoke_llm
+from app.rca.parser import parse_xdr_file
 from app.rca.pipeline import analyze_xdr_file
 from app.rca.prompt_builder import build_llm_context, build_rca_prompt
+from app.rca.spec_loader import load_lte_call_kpi_spec
+from app.routes.xdr_schema import active_schema_id
 from app.services.llm import stream_chat as llm_stream_chat
 from app.services import uce_client
 from app.schemas import MessageResponse, RcaAnalyzeResponse, RcaJobResponse
@@ -28,7 +33,7 @@ router = APIRouter(prefix="/api/rca", tags=["rca"])
 BASE_DIR = Path.cwd()
 UPLOAD_DIR = BASE_DIR / "xdr_uploads"
 RESULT_DIR = BASE_DIR / "rca_results"
-RCA_LLM_OPTIONS = {"temperature": 0.1, "num_predict": 8192}
+RCA_LLM_OPTIONS = {"temperature": 0.1, "num_predict": 2048}
 RCA_LLM_TIMEOUT_SECONDS = 1800.0
 RCA_HEARTBEAT_SECONDS = 30.0
 RCA_SUMMARY_STREAM_DELAY_SECONDS = 0.18
@@ -179,6 +184,80 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
 
             await _update_job(db, job_id, status="parsing", progress=20, current_step="parsing")
             _publish(job_id, {"step": "parsing", "progress": 20, "status": "parsing"})
+
+            # Pre-parse: store xDR records in DuckDB before running the full analysis pipeline.
+            # This is a separate parse pass so the records are persisted even if the LLM step fails.
+            dataset_id = make_dataset_id(job.filename)
+            duckdb_saved = False
+            try:
+                fields = load_lte_call_kpi_spec()
+                parsed_xdr = await asyncio.to_thread(parse_xdr_file, Path(job.file_path), fields)
+                await dataset_manager.create_dataset(
+                    dataset_id=dataset_id,
+                    job_id=job_id,
+                    conversation_id=job.conversation_id,
+                    filename=job.filename,
+                    file_size=job.file_size,
+                    records=parsed_xdr.records,
+                    fields=fields,
+                )
+                # MySQL RcaDataset record — upsert (같은 dataset_id가 이미 있을 수 있음)
+                try:
+                    from sqlalchemy.dialects.mysql import insert as mysql_insert
+                    await db.execute(
+                        mysql_insert(RcaDataset).values(
+                            dataset_id=dataset_id,
+                            job_id=job_id,
+                            conversation_id=job.conversation_id,
+                            filename=job.filename,
+                            file_size=job.file_size,
+                            record_count=parsed_xdr.stats.total_lines,
+                            parsed_records=parsed_xdr.stats.parsed_records,
+                            status="PROCESSING",
+                            schema_id=job.schema_id,
+                        ).on_duplicate_key_update(
+                            job_id=job_id,
+                            conversation_id=job.conversation_id,
+                            file_size=job.file_size,
+                            record_count=parsed_xdr.stats.total_lines,
+                            parsed_records=parsed_xdr.stats.parsed_records,
+                            status="PROCESSING",
+                            schema_id=job.schema_id,
+                        )
+                    )
+                    await db.commit()
+                except Exception as _mysql_exc:
+                    logger.warning("MySQL RcaDataset upsert 실패 (계속 진행): %s", _mysql_exc)
+                    await db.rollback()
+                # Auto-attach dataset to conversation (primary if no primary exists yet)
+                try:
+                    existing_primary = await db.execute(
+                        select(ConversationDataset).where(
+                            ConversationDataset.conversation_id == job.conversation_id,
+                            ConversationDataset.is_primary == True,
+                        )
+                    )
+                    has_primary = existing_primary.scalar_one_or_none() is not None
+                    # INSERT IGNORE equivalent: upsert with no-op on conflict
+                    from sqlalchemy.dialects.mysql import insert as mysql_insert
+                    await db.execute(
+                        mysql_insert(ConversationDataset)
+                        .values(
+                            conversation_id=job.conversation_id,
+                            dataset_id=dataset_id,
+                            is_primary=not has_primary,
+                        )
+                        .on_duplicate_key_update(dataset_id=dataset_id)  # no-op on conflict
+                    )
+                    await db.commit()
+                except Exception:
+                    logger.warning("ConversationDataset auto-attach 실패 (계속 진행)")
+                    await db.rollback()
+                duckdb_saved = True
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "DuckDB pre-parse failed for job %d; continuing with legacy pipeline", job_id
+                )
 
             summary = analyze_xdr_file(Path(job.file_path), job.filename)
 
@@ -352,15 +431,43 @@ async def _run_rca_job(job_id: int, use_uce: bool = False) -> None:
             processing_metrics["xdr_to_final_json_ratio"] = round(final_bytes / input_bytes, 6) if input_bytes else None
             processing_metrics["final_reduction_ratio"] = round(1 - (final_bytes / input_bytes), 6) if input_bytes else None
 
+            # DuckDB summary (lightweight — only store if DuckDB save succeeded)
+            if duckdb_saved:
+                try:
+                    await dataset_manager.store_summary(dataset_id, summary)
+                    period_start = (summary.get("file_info") or {}).get("period", {}).get("start_us")
+                    period_end = (summary.get("file_info") or {}).get("period", {}).get("end_us")
+                    # Update MySQL RcaDataset with final stats
+                    ds_result = await db.execute(
+                        select(RcaDataset).where(RcaDataset.dataset_id == dataset_id)
+                    )
+                    ds = ds_result.scalar_one_or_none()
+                    if ds:
+                        ds.period_start = period_start
+                        ds.period_end = period_end
+                        ds.record_count = summary["file_info"]["parse"]["total_lines"]
+                        ds.parsed_records = summary["file_info"]["parse"]["parsed_records"]
+                        ds.status = "READY"
+                        ds.schema_id = job.schema_id
+                        await db.commit()
+                except Exception:
+                    logging.getLogger(__name__).exception(
+                        "Failed to update DuckDB summary / RcaDataset for %s", dataset_id
+                    )
+
             upload_path = Path(job.file_path)
             deleted_upload = False
             delete_error = None
-            if upload_path.exists():
+            # Only delete the upload file after DuckDB persistence is confirmed.
+            if duckdb_saved and upload_path.exists():
                 try:
                     upload_path.unlink()
                     deleted_upload = True
                 except OSError as exc:
                     delete_error = str(exc)
+            elif not duckdb_saved and upload_path.exists():
+                # DuckDB save failed; keep the file so the user can retry.
+                delete_error = "DuckDB save failed — upload file retained"
             processing_metrics["upload_file_deleted"] = deleted_upload
             processing_metrics["upload_file_delete_error"] = delete_error
             for _ in range(3):
@@ -455,6 +562,7 @@ async def create_rca_job(
     background_tasks: BackgroundTasks,
     conversation_id: int = Form(...),
     use_uce: bool = Form(False),
+    schema_id: int | None = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ):
@@ -469,6 +577,13 @@ async def create_rca_job(
     if not filename.lower().endswith(".dat"):
         raise HTTPException(status_code=422, detail="RCA 분석은 .dat 파일만 지원합니다")
 
+    selected_schema_id = schema_id or await active_schema_id(db)
+    schema_result = await db.execute(
+        select(XdrSchemaProfile).where(XdrSchemaProfile.id == selected_schema_id)
+    )
+    if not schema_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="xDR 스키마를 찾을 수 없습니다")
+
     job = RcaJob(
         conversation_id=conversation_id,
         filename=filename,
@@ -477,6 +592,7 @@ async def create_rca_job(
         status="queued",
         progress=0,
         current_step="uploading",
+        schema_id=selected_schema_id,
     )
     db.add(job)
     await db.flush()
@@ -575,3 +691,201 @@ async def get_rca_result(job_id: int, db: AsyncSession = Depends(get_db)):
     if not rca_result:
         raise HTTPException(status_code=404, detail="RCA 결과를 찾을 수 없습니다")
     return rca_result.summary_json
+
+
+# ---------------------------------------------------------------------------
+# Dataset management endpoints (Phase 1)
+# ---------------------------------------------------------------------------
+
+@router.get("/datasets")
+async def list_datasets(conversation_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    datasets = await dataset_manager.list_datasets(conversation_id)
+    ids = [dataset.get("dataset_id") for dataset in datasets if dataset.get("dataset_id")]
+    if not ids:
+        return datasets
+    result = await db.execute(
+        select(RcaDataset, XdrSchemaProfile)
+        .outerjoin(XdrSchemaProfile, XdrSchemaProfile.id == RcaDataset.schema_id)
+        .where(RcaDataset.dataset_id.in_(ids))
+    )
+    schema_map = {
+        ds.dataset_id: {
+            "schema_id": ds.schema_id,
+            "schema_name": profile.name if profile else None,
+        }
+        for ds, profile in result.all()
+    }
+    for dataset in datasets:
+        dataset.update(schema_map.get(dataset.get("dataset_id"), {"schema_id": None, "schema_name": None}))
+    return datasets
+
+
+@router.get("/datasets/{dataset_id}")
+async def get_dataset(dataset_id: str):
+    meta = await dataset_manager.get_dataset_info(dataset_id)
+    if not meta:
+        raise HTTPException(status_code=404, detail="데이터셋을 찾을 수 없습니다")
+    return meta
+
+
+@router.get("/datasets/{dataset_id}/summary")
+async def get_dataset_summary(dataset_id: str):
+    summary = await dataset_manager.get_summary(dataset_id)
+    if summary is None:
+        raise HTTPException(status_code=404, detail="데이터셋 요약을 찾을 수 없습니다")
+    return summary
+
+
+@router.delete("/datasets/{dataset_id}", status_code=204)
+async def delete_dataset(dataset_id: str, db: AsyncSession = Depends(get_db)):
+    meta = await dataset_manager.get_dataset_info(dataset_id)
+    if not meta:
+        raise HTTPException(status_code=404, detail="데이터셋을 찾을 수 없습니다")
+    await dataset_manager.delete_dataset(dataset_id)
+    # Remove all conversation attachments and the dataset record
+    att_result = await db.execute(
+        select(ConversationDataset).where(ConversationDataset.dataset_id == dataset_id)
+    )
+    for att in att_result.scalars().all():
+        await db.delete(att)
+    result = await db.execute(select(RcaDataset).where(RcaDataset.dataset_id == dataset_id))
+    ds = result.scalar_one_or_none()
+    if ds:
+        await db.delete(ds)
+    await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Conversation ↔ Dataset attachment endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/conversations/{conversation_id}/datasets")
+async def list_conversation_datasets(conversation_id: int, db: AsyncSession = Depends(get_db)):
+    """Return datasets attached to a conversation, primary first."""
+    result = await db.execute(
+        select(ConversationDataset, RcaDataset)
+        .join(RcaDataset, RcaDataset.dataset_id == ConversationDataset.dataset_id)
+        .where(ConversationDataset.conversation_id == conversation_id)
+        .order_by(ConversationDataset.is_primary.desc(), ConversationDataset.attached_at.desc())
+    )
+    rows = result.all()
+    out = []
+    for att, ds in rows:
+        item = {
+            "id": ds.id,
+            "dataset_id": ds.dataset_id,
+            "filename": ds.filename,
+            "file_size": ds.file_size,
+            "record_count": ds.record_count,
+            "parsed_records": ds.parsed_records,
+            "period_start": ds.period_start,
+            "period_end": ds.period_end,
+            "status": ds.status,
+            "schema_id": ds.schema_id,
+            "schema_name": None,
+            "is_primary": att.is_primary,
+            "attached_at": att.attached_at.isoformat() if att.attached_at else None,
+            "created_at": ds.created_at.isoformat() if ds.created_at else None,
+        }
+        if ds.schema_id:
+            schema = await db.execute(select(XdrSchemaProfile).where(XdrSchemaProfile.id == ds.schema_id))
+            profile = schema.scalar_one_or_none()
+            item["schema_name"] = profile.name if profile else None
+        out.append(item)
+    return out
+
+
+@router.post("/conversations/{conversation_id}/datasets/{dataset_id}", status_code=201)
+async def attach_dataset(
+    conversation_id: int,
+    dataset_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Attach an existing dataset to a conversation."""
+    # Verify dataset exists
+    ds_res = await db.execute(select(RcaDataset).where(RcaDataset.dataset_id == dataset_id))
+    if not ds_res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="데이터셋을 찾을 수 없습니다")
+    # Determine if this should be primary
+    existing = await db.execute(
+        select(ConversationDataset).where(
+            ConversationDataset.conversation_id == conversation_id,
+            ConversationDataset.is_primary == True,
+        )
+    )
+    has_primary = existing.scalar_one_or_none() is not None
+    from sqlalchemy.dialects.mysql import insert as mysql_insert
+    await db.execute(
+        mysql_insert(ConversationDataset)
+        .values(
+            conversation_id=conversation_id,
+            dataset_id=dataset_id,
+            is_primary=not has_primary,
+        )
+        .on_duplicate_key_update(dataset_id=dataset_id)  # no-op if already attached
+    )
+    await db.commit()
+    return {"conversation_id": conversation_id, "dataset_id": dataset_id, "is_primary": not has_primary}
+
+
+@router.delete("/conversations/{conversation_id}/datasets/{dataset_id}", status_code=204)
+async def detach_dataset(
+    conversation_id: int,
+    dataset_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Detach a dataset from a conversation WITHOUT deleting the dataset."""
+    result = await db.execute(
+        select(ConversationDataset).where(
+            ConversationDataset.conversation_id == conversation_id,
+            ConversationDataset.dataset_id == dataset_id,
+        )
+    )
+    att = result.scalar_one_or_none()
+    if not att:
+        raise HTTPException(status_code=404, detail="이 대화에 해당 데이터셋이 첨부되어 있지 않습니다")
+    was_primary = att.is_primary
+    await db.delete(att)
+    # If detached was primary, promote the next attachment
+    if was_primary:
+        next_res = await db.execute(
+            select(ConversationDataset)
+            .where(ConversationDataset.conversation_id == conversation_id)
+            .order_by(ConversationDataset.attached_at.desc())
+            .limit(1)
+        )
+        next_att = next_res.scalar_one_or_none()
+        if next_att:
+            next_att.is_primary = True
+    await db.commit()
+
+
+@router.patch("/conversations/{conversation_id}/datasets/{dataset_id}/primary", status_code=200)
+async def set_primary_dataset(
+    conversation_id: int,
+    dataset_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Promote a dataset to primary for a conversation."""
+    # Demote all current primaries
+    all_res = await db.execute(
+        select(ConversationDataset).where(
+            ConversationDataset.conversation_id == conversation_id,
+            ConversationDataset.is_primary == True,
+        )
+    )
+    for att in all_res.scalars().all():
+        att.is_primary = False
+    # Promote target
+    target_res = await db.execute(
+        select(ConversationDataset).where(
+            ConversationDataset.conversation_id == conversation_id,
+            ConversationDataset.dataset_id == dataset_id,
+        )
+    )
+    target = target_res.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="이 대화에 해당 데이터셋이 첨부되어 있지 않습니다")
+    target.is_primary = True
+    await db.commit()
+    return {"conversation_id": conversation_id, "dataset_id": dataset_id, "is_primary": True}
