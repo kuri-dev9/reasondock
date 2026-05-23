@@ -38,6 +38,22 @@ async def _ensure_longtext_columns(conn):
     except SQLAlchemyError:
         pass
     try:
+        await conn.execute(text("ALTER TABLE knowledge_documents ADD COLUMN uce_denoised_content LONGTEXT NULL AFTER normalized_content"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE knowledge_documents ADD COLUMN dpe_ir_status VARCHAR(20) NULL DEFAULT 'RAW_ONLY' AFTER uce_denoised_content"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE rca_datasets MODIFY period_start BIGINT NULL"))
+    except SQLAlchemyError:
+        pass
+    try:
+        await conn.execute(text("ALTER TABLE rca_datasets MODIFY period_end BIGINT NULL"))
+    except SQLAlchemyError:
+        pass
+    try:
         await conn.execute(text("ALTER TABLE rca_jobs ADD COLUMN schema_id INT NULL"))
     except SQLAlchemyError:
         pass
