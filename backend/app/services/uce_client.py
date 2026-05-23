@@ -66,6 +66,7 @@ async def build_context(
     model: str,
     rag_context: str = "",
     previous_state: dict[str, Any] | None = None,
+    xdr_schema_hints: list[dict[str, Any]] | None = None,
 ) -> UceContextResult:
     documents = [_chunk_to_document(chunk, index) for index, chunk in enumerate(rag_chunks)]
     if rag_context.strip():
@@ -106,6 +107,7 @@ async def build_context(
         "has_dataset_context": has_dataset,
         "has_retrieval_context": has_retrieval,
         "retrieval_count": retrieval_count,
+        "xdr_schema_hints": xdr_schema_hints or [],
     }
 
     started = time.perf_counter()

@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.config import settings
-from app.models import Conversation, ConversationDataset, Message, Attachment, KnowledgeDocument, RcaDataset
+from app.models import Conversation, ConversationDataset, Message, Attachment, KnowledgeDocument, RcaDataset, XdrFieldSchema
 from app.schemas import ChatRequest
 from app.services.llm import LLMError, chat as llm_chat, stream_chat
 from app.services import uce_client
@@ -675,6 +675,31 @@ async def chat(
         prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
 
     if data.use_uce and settings.uce_enabled:
+        xdr_schema_hints: list[dict] = []
+        if active_dataset:
+            try:
+                schema_query = (
+                    select(XdrFieldSchema)
+                    .where(XdrFieldSchema.is_active == True)
+                    .options(selectinload(XdrFieldSchema.keywords))
+                )
+                if active_dataset.schema_id:
+                    schema_query = schema_query.where(
+                        XdrFieldSchema.schema_id == active_dataset.schema_id
+                    )
+                schema_result = await db.execute(schema_query)
+                schema_fields = schema_result.scalars().all()
+                xdr_schema_hints = [
+                    {
+                        "field_name": f.field_name,
+                        "group": f.description or "",
+                        "aliases": [k.keyword for k in f.keywords],
+                    }
+                    for f in schema_fields
+                ]
+            except Exception:
+                logger.warning("xDR schema hints 로드 실패 (conv_id=%s)", conversation_id)
+
         rag_chunks = []
 
         selected_doc_ids = list(priority_doc_ids) if priority_doc_ids else list(
@@ -763,6 +788,7 @@ async def chat(
                 model=conv.model,
                 rag_context=rag_context,
                 previous_state=previous_uce_state,
+                xdr_schema_hints=xdr_schema_hints or None,
             )
             messages = _messages_from_uce_prompt(conv.system_prompt, uce_result.prompt_pack["content"])
             prompt_metrics = _uce_metrics(
