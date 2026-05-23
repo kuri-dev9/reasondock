@@ -115,7 +115,8 @@ export default function KnowledgePanel({ visible, onClose }: Props) {
       await analyzeKnowledgeDoc(doc.id);
       await loadDocs();
     } catch (err: any) {
-      alert(err.message || 'DPE 분석 실패');
+      await loadDocs();
+      alert(`DPE 분석 실패: ${err.message || '알 수 없는 오류'}\n\n모델 로딩 후 재시도하거나 잠시 후 다시 시도해주세요.`);
     } finally {
       setAnalyzingId(null);
     }
@@ -291,15 +292,28 @@ export default function KnowledgePanel({ visible, onClose }: Props) {
                       {doc.dpe_ir_status === 'USER_EDITED' && (
                         <span className="dpe-status-badge edited">편집됨</span>
                       )}
+                      {doc.dpe_ir_status === 'ERROR' && (
+                        <span
+                          className="dpe-status-badge error"
+                          title={doc.error_message || '분석 실패'}
+                        >
+                          분석실패
+                        </span>
+                      )}
                     </span>
                   </div>
-                  {doc.status === 'ready' && doc.dpe_ir_status === 'RAW_ONLY' && (
+                  {doc.status === 'ready' &&
+                    (doc.dpe_ir_status === 'RAW_ONLY' || doc.dpe_ir_status === 'ERROR') && (
                     <button
                       className="knowledge-item-analyze"
                       onClick={() => handleAnalyze(doc)}
                       disabled={analyzingId === doc.id}
                     >
-                      {analyzingId === doc.id ? '분석 중...' : '분석'}
+                      {analyzingId === doc.id
+                        ? '분석 중...'
+                        : doc.dpe_ir_status === 'ERROR'
+                          ? '재시도'
+                          : '분석'}
                     </button>
                   )}
                   <button

@@ -40,7 +40,7 @@ Frontend (3000) → Backend (8000) → Ollama (11434)
                               → DPE (8200) → Backend /api/normalize → Ollama
 ```
 
-### 6. RCA 아키텍처 (TO-BE — 구현 진행 중)
+### 6. RCA 아키텍처
 **현재 상태:** 1회성 파싱 + LLM 리포트 (기존 흐름 유지)
 **목표:** DuckDB 기반 인터랙티브 조사 워크스페이스
 
@@ -58,6 +58,12 @@ Frontend (3000) → Backend (8000) → Ollama (11434)
 - `rca/dataset_manager.py` — 데이터셋 생명주기 관리
 
 **상세 설계:** `docs/RCA_INVESTIGATION_WORKSPACE.md` 참조
+
+### 7. .env 파일 동기화 규칙
+**`.env.linux` 또는 `.env.mac` 수정 시 반드시 두 파일 모두 동시에 수정한다.**
+- `OLLAMA_BASE_URL`, `DEFAULT_OLLAMA_MODEL`은 서버별로 다른 값 유지
+- 나머지 설정은 두 파일을 항상 동일하게 유지
+- 새 환경변수 추가 시 두 파일 모두에 추가
 
 ---
 

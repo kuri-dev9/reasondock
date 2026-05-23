@@ -1693,6 +1693,16 @@ body {
   color: #16a34a;
   border-color: #bbf7d0;
 }
+.dpe-status-badge.error {
+  background: #7f1d1d44;
+  color: #f87171;
+  border: 1px solid #7f1d1d66;
+}
+[data-theme='light'] .dpe-status-badge.error {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
 
 /* badge-edited (doc viewer header) */
 .badge-edited {

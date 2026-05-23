@@ -55,7 +55,7 @@ async def normalize_document(request: NormalizeRequest):
     )
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=settings.dpe_timeout_seconds) as client:
             resp = await client.post(
                 f"{settings.ollama_base_url}/api/generate",
                 json={"model": model, "prompt": prompt, "stream": False},

@@ -266,13 +266,40 @@ async def analyze_document(doc_id: int, db: AsyncSession = Depends(get_db)):
     if not raw_text:
         raise HTTPException(status_code=400, detail="원본 텍스트를 찾을 수 없습니다")
 
-    dpe_result = await call_dpe_process(
-        document_id=str(doc_id),
-        filename=doc.filename,
-        content=raw_text,
-    )
+    try:
+        dpe_result = await call_dpe_process(
+            document_id=str(doc_id),
+            filename=doc.filename,
+            content=raw_text,
+        )
+    except Exception as e:
+        await db.execute(
+            update(KnowledgeDocument)
+            .where(KnowledgeDocument.id == doc_id)
+            .values(
+                dpe_ir_status="ERROR",
+                error_message=f"DPE 분석 실패: {str(e)[:300]}",
+            )
+        )
+        await db.commit()
+        raise HTTPException(status_code=502, detail=f"DPE 분석 실패: {e}")
+
     if not dpe_result or not dpe_result.normalization_applied:
-        raise HTTPException(status_code=500, detail="DPE 분석 실패 또는 normalization 미적용")
+        reason = (
+            getattr(dpe_result, "normalization_skipped_reason", "알 수 없음")
+            if dpe_result
+            else "DPE 응답 없음"
+        )
+        await db.execute(
+            update(KnowledgeDocument)
+            .where(KnowledgeDocument.id == doc_id)
+            .values(
+                dpe_ir_status="ERROR",
+                error_message=f"DPE normalization 실패: {reason}",
+            )
+        )
+        await db.commit()
+        raise HTTPException(status_code=500, detail=f"DPE normalization 실패: {reason}")
 
     await db.execute(
         update(KnowledgeDocument)
@@ -282,6 +309,7 @@ async def analyze_document(doc_id: int, db: AsyncSession = Depends(get_db)):
             uce_denoised_content=dpe_result.normalized_content,
             dpe_metadata=dpe_result.to_metadata_dict(),
             dpe_ir_status="GENERATED",
+            error_message=None,
         )
     )
     await db.commit()

@@ -132,7 +132,7 @@ export interface KnowledgeDoc {
   dpe_metadata?: Record<string, any> | null;
   has_dpe_ir?: boolean;
   has_uce_denoised?: boolean;
-  dpe_ir_status?: 'RAW_ONLY' | 'GENERATED' | 'USER_EDITED';
+  dpe_ir_status?: 'RAW_ONLY' | 'GENERATED' | 'USER_EDITED' | 'ERROR';
   created_at: string;
 }
 
