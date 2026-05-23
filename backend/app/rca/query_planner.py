@@ -89,16 +89,46 @@ class QueryPlan:
 
 
 @dataclass(frozen=True)
+class DatasetMeta:
+    dataset_id: str
+    dataset_name: str
+    physical_table_name: str
+
+
+@dataclass(frozen=True)
 class FieldTaxonomy:
     field_name: str
     description: str
-    collect_type: str
+    db_type: str
+    semantic_db_type: str
     category: str | None
     role: str | None
     importance: str
     active: bool
     capabilities: tuple[str, ...]
     keywords: tuple[str, ...]
+
+
+def quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def sql_literal(field: FieldTaxonomy, value: str | int | float | bool | None) -> str:
+    if value is None:
+        return "NULL"
+    db_type = field.db_type.lower()
+    if db_type in {"int", "integer", "bigint", "uint", "double", "float", "real", "decimal"}:
+        return str(value)
+    if db_type in {"bool", "boolean"}:
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        return "true" if str(value).lower() in {"1", "true", "yes", "y"} else "false"
+    text = str(value).replace("'", "''")
+    return f"'{text}'"
+
+
+def like_literal(value: str) -> str:
+    return "'%" + value.replace("'", "''") + "%'"
 
 
 async def _load_field_taxonomy(
@@ -112,7 +142,8 @@ async def _load_field_taxonomy(
             FieldTaxonomy(
                 field_name=field.name,
                 description=field.description,
-                collect_type=field.collect_type,
+                db_type="TEXT",
+                semantic_db_type=field.collect_type,
                 category=field.section,
                 role=None,
                 importance="low",
@@ -143,7 +174,8 @@ async def _load_field_taxonomy(
             FieldTaxonomy(
                 field_name=row.field_name,
                 description=row.description or (spec.description if spec else ""),
-                collect_type=row.db_type or (spec.collect_type if spec else "string"),
+                db_type="TEXT",
+                semantic_db_type=row.db_type or (spec.collect_type if spec else "string"),
                 category=row.category or row.spec_section or (spec.section if spec else None),
                 role=row.role,
                 importance=row.importance or "low",
@@ -153,6 +185,9 @@ async def _load_field_taxonomy(
             )
         )
     return taxonomy
+
+
+load_field_taxonomy = _load_field_taxonomy
 
 
 def _field_capabilities(field: XdrFieldSchema) -> list[str]:
@@ -181,7 +216,7 @@ def _build_schema_hint(taxonomy: list[FieldTaxonomy]) -> str:
         aliases = ", ".join(field.keywords) if field.keywords else "-"
         capabilities = ", ".join(field.capabilities) if field.capabilities else "-"
         lines.append(
-            f"  {field.field_name} ({field.collect_type}): {description} | "
+            f"  {field.field_name} (db_type={field.db_type}, semantic_type={field.semantic_db_type}): {description} | "
             f"role={field.role or 'unknown'} | category={field.category or '-'} | "
             f"importance={field.importance} | capabilities={capabilities} | aliases: {aliases}"
         )
@@ -217,6 +252,81 @@ def _build_semantic_rules(taxonomy: list[FieldTaxonomy]) -> str:
     return "\n".join(rules)
 
 
+def _normalize_dataset_meta(dataset_id: str, dataset_meta: DatasetMeta | dict | None) -> DatasetMeta:
+    if isinstance(dataset_meta, DatasetMeta):
+        return dataset_meta
+    if isinstance(dataset_meta, dict):
+        dataset_name = str(dataset_meta.get("dataset_name") or dataset_meta.get("dataset_id") or dataset_id)
+        physical_table_name = str(dataset_meta.get("physical_table_name") or f"xdr_{dataset_id}")
+        return DatasetMeta(dataset_id=dataset_id, dataset_name=dataset_name, physical_table_name=physical_table_name)
+    return DatasetMeta(dataset_id=dataset_id, dataset_name=dataset_id, physical_table_name=f"xdr_{dataset_id}")
+
+
+def _replace_dataset_table_references(sql: str, meta: DatasetMeta) -> str:
+    physical = quote_identifier(meta.physical_table_name)
+    names = {meta.dataset_id, meta.dataset_name, meta.physical_table_name}
+    for name in sorted(names, key=len, reverse=True):
+        if not name:
+            continue
+        quoted_name = quote_identifier(name)
+        pattern = rf"(?i)\b(FROM|JOIN)\s+(?:{re.escape(quoted_name)}|{re.escape(name)})(?=\s|$)"
+        sql = re.sub(pattern, lambda m: f"{m.group(1)} {physical}", sql)
+    return sql
+
+
+def _normalize_schema_literals(sql: str, taxonomy: list[FieldTaxonomy]) -> str:
+    by_name = {field.field_name: field for field in taxonomy}
+    for field_name, field in by_name.items():
+        if field.db_type.lower() not in {"text", "varchar", "string", "char"}:
+            continue
+        quoted_field = quote_identifier(field_name)
+        pattern = rf"(?i)((?:\b{re.escape(field_name)}\b|{re.escape(quoted_field)})\s*(?:=|<>|!=|<|>|<=|>=)\s*)(-?\d+(?:\.\d+)?)\b"
+        sql = re.sub(
+            pattern,
+            lambda m: f"{m.group(1)}{sql_literal(field, m.group(2))}",
+            sql,
+        )
+    return sql
+
+
+def normalize_generated_sql(sql: str, *, dataset_meta: DatasetMeta, taxonomy: list[FieldTaxonomy]) -> str:
+    normalized = " ".join(sql.strip().split())
+    normalized = _replace_dataset_table_references(normalized, dataset_meta)
+    normalized = _normalize_schema_literals(normalized, taxonomy)
+    return normalized
+
+
+def build_error_stats_fallback_plan(
+    *,
+    taxonomy: list[FieldTaxonomy],
+    dataset_meta: DatasetMeta,
+    group_field: str,
+) -> QueryPlan | None:
+    fields = {field.field_name: field for field in taxonomy}
+    required = [group_field, "success_flag", "first_error_interface_protocol", "first_error_cause"]
+    if any(name not in fields for name in required):
+        return None
+    table = quote_identifier(dataset_meta.physical_table_name)
+    group_col = quote_identifier(group_field)
+    success_col = quote_identifier("success_flag")
+    iface_col = quote_identifier("first_error_interface_protocol")
+    cause_col = quote_identifier("first_error_cause")
+    sql = (
+        f"SELECT {group_col}, {iface_col}, {cause_col}, COUNT(*) as cnt "
+        f"FROM {table} "
+        f"WHERE {success_col} = {sql_literal(fields['success_flag'], '0')} "
+        f"GROUP BY {group_col}, {iface_col}, {cause_col} "
+        "ORDER BY cnt DESC LIMIT 50"
+    )
+    return QueryPlan(
+        is_xdr_related=True,
+        confidence=1.0,
+        intent="group_by_error_stats",
+        description="Rule-based schema-aware fallback pattern matched",
+        sql=sql,
+    )
+
+
 async def plan_query(
     user_message: str,
     dataset_id: str,
@@ -224,6 +334,7 @@ async def plan_query(
     fields: tuple[FieldSpec, ...],
     db: AsyncSession | None = None,
     schema_id: int | None = None,
+    dataset_meta: DatasetMeta | dict | None = None,
 ) -> QueryPlan:
     """Two-stage xDR query planner. Always returns QueryPlan (never None).
 
@@ -245,15 +356,17 @@ async def plan_query(
     from app.services.llm import chat as llm_chat
 
     taxonomy = await _load_field_taxonomy(db, fields, schema_id=schema_id)
+    meta = _normalize_dataset_meta(dataset_id, dataset_meta)
     schema_hint = _build_schema_hint(taxonomy)
     inactive_hint = _build_inactive_hint(taxonomy)
     semantic_rules = _build_semantic_rules(taxonomy)
-    table = f"xdr_{dataset_id}"
+    table = quote_identifier(meta.physical_table_name)
 
     system_prompt = f"""당신은 텔레콤 xDR 데이터 분석 전문가입니다.
 사용자 질문을 DuckDB SQL로 변환하세요.
 
-테이블명: {table}
+Logical dataset name: {meta.dataset_name}
+Physical table name: {table}
 주요 컬럼:
 {schema_hint}
 
@@ -263,6 +376,11 @@ async def plan_query(
 규칙:
 {semantic_rules}
 - active=true 컬럼을 우선 사용
+- FROM/JOIN에는 반드시 Physical table name만 사용할 것: {table}
+- dataset_id 또는 logical dataset name을 FROM/JOIN에 직접 사용하지 말 것
+- 각 컬럼의 db_type을 기준으로 literal을 생성할 것
+- db_type=TEXT/VARCHAR/STRING 컬럼 비교값은 반드시 작은따옴표로 감쌀 것. 예: success_flag = '0'
+- LIKE 조건은 문자열 literal만 사용. 예: IMSI LIKE '%123%'
 - role/category/importance/capabilities/aliases를 함께 참고해 사용자 표현과 실제 컬럼을 매핑
 - 비활성 컬럼은 사용자가 명시적으로 해당 field_name을 요구한 경우에만 보조적으로 사용
 - groupable=false 컬럼은 GROUP BY에 사용하지 말 것
@@ -321,6 +439,8 @@ async def plan_query(
                 description="유효한 SQL 생성 실패",
                 sql="",
             )
+
+        sql = normalize_generated_sql(sql, dataset_meta=meta, taxonomy=taxonomy)
 
         return QueryPlan(
             is_xdr_related=True,

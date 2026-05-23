@@ -20,6 +20,8 @@ _DB_PATH = Path("/app/rca_datasets/rca_datasets.duckdb")
 _SCHEMA_INIT = """
 CREATE TABLE IF NOT EXISTS rca_dataset_meta (
     dataset_id      VARCHAR PRIMARY KEY,
+    dataset_name    VARCHAR,
+    physical_table_name VARCHAR,
     job_id          INTEGER,
     conversation_id INTEGER,
     filename        VARCHAR,
@@ -44,7 +46,34 @@ def _get_connection() -> duckdb.DuckDBPyConnection:
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(_DB_PATH))
     conn.execute(_SCHEMA_INIT)
+    _ensure_meta_columns(conn)
     return conn
+
+
+def _ensure_meta_columns(conn: duckdb.DuckDBPyConnection) -> None:
+    existing = {
+        row[1]
+        for row in conn.execute("PRAGMA table_info('rca_dataset_meta')").fetchall()
+    }
+    if "dataset_name" not in existing:
+        conn.execute("ALTER TABLE rca_dataset_meta ADD COLUMN dataset_name VARCHAR")
+    if "physical_table_name" not in existing:
+        conn.execute("ALTER TABLE rca_dataset_meta ADD COLUMN physical_table_name VARCHAR")
+    conn.execute(
+        """
+        UPDATE rca_dataset_meta
+        SET dataset_name = dataset_id
+        WHERE dataset_name IS NULL
+        """
+    )
+    rows = conn.execute(
+        "SELECT dataset_id FROM rca_dataset_meta WHERE physical_table_name IS NULL"
+    ).fetchall()
+    for (dataset_id,) in rows:
+        conn.execute(
+            "UPDATE rca_dataset_meta SET physical_table_name = ? WHERE dataset_id = ?",
+            [physical_table_name_for_dataset(dataset_id), dataset_id],
+        )
 
 
 def make_dataset_id(filename: str) -> str:
@@ -53,11 +82,15 @@ def make_dataset_id(filename: str) -> str:
 
 
 def _table_name(dataset_id: str) -> str:
+    return physical_table_name_for_dataset(dataset_id)
+
+
+def physical_table_name_for_dataset(dataset_id: str) -> str:
     return f"xdr_{dataset_id}"
 
 
 def _col_type(field: FieldSpec) -> str:
-    return "BIGINT" if field.collect_type == "timeval" else "VARCHAR"
+    return "VARCHAR"
 
 
 def create_xdr_table(dataset_id: str, fields: tuple[FieldSpec, ...]) -> None:
@@ -97,10 +130,12 @@ def store_meta(
 ) -> None:
     sql = """
     INSERT INTO rca_dataset_meta
-        (dataset_id, job_id, conversation_id, filename, file_size,
+        (dataset_id, dataset_name, physical_table_name, job_id, conversation_id, filename, file_size,
          record_count, parsed_records, period_start, period_end, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'READY')
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'READY')
     ON CONFLICT (dataset_id) DO UPDATE SET
+        dataset_name = excluded.dataset_name,
+        physical_table_name = excluded.physical_table_name,
         job_id = excluded.job_id,
         conversation_id = excluded.conversation_id,
         filename = excluded.filename,
@@ -115,7 +150,8 @@ def store_meta(
         conn.execute(
             sql,
             [
-                dataset_id, job_id, conversation_id, filename, file_size,
+                dataset_id, dataset_id, physical_table_name_for_dataset(dataset_id),
+                job_id, conversation_id, filename, file_size,
                 record_count, parsed_records, period_start, period_end,
             ],
         )

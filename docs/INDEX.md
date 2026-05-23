@@ -19,6 +19,9 @@
 | RCA Investigation Workspace | [RCA_INVESTIGATION_WORKSPACE.md](RCA_INVESTIGATION_WORKSPACE.md) | TO-BE RCA 인터랙티브 조사 워크스페이스 아키텍처. DuckDB 설계, Query Planning, 구현 단계 |
 | RCA 통합 설계 | [RCA_DESIGN.md](RCA_DESIGN.md) | AS-IS → TO-BE 구조, 모듈 책임 분리, DB/API 스펙, 구현 단계 |
 | Reasoning 아키텍처 | [07_Deterministic_Reasoning_Architecture.md](07_Deterministic_Reasoning_Architecture.md) | RCA Engine 설계 철학, LLM 역할 정의, Reasoning 계층 상세 |
+| xDR Pipeline | [xdr_pipeline.md](xdr_pipeline.md) | xDR dataset naming, DuckDB storage, planner data flow |
+| xDR Schema Registry | [xdr_schema.md](xdr_schema.md) | schema metadata, physical/semantic type separation, candidate fields |
+| Query Planner | [query_planner.md](query_planner.md) | schema-aware SQL generation, physical table usage, debug output |
 
 > **참고**: RCA_DESIGN.md는 구현 관점의 설계 문서(모듈 구조, API, DB)이고,  
 > 07_Deterministic_Reasoning_Architecture.md는 추론 철학 및 아키텍처 방향 문서다.  

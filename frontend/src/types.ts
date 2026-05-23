@@ -52,6 +52,8 @@ export interface PromptMetrics {
   response_chars?: number | null;
   // xDR 데이터셋 조사
   xdr_dataset_id?: string | null;
+  xdr_dataset_name?: string | null;
+  xdr_physical_table_name?: string | null;
   xdr_query_intent?: string | null;
   xdr_query_description?: string | null;
   xdr_query_sql?: string | null;
@@ -59,9 +61,11 @@ export interface PromptMetrics {
   xdr_query_result_rows?: any[] | null;
   xdr_query_execution_ms?: number | null;
   xdr_pipeline_activated?: boolean | null;
+  xdr_pipeline_status?: string | null;
   xdr_planner_confidence?: number | null;
   xdr_selected_schema_fields?: string[] | null;
   xdr_candidate_fields_before_planner?: string[] | null;
+  xdr_field_db_types?: Record<string, string> | null;
   xdr_raw_query_result_preview?: string | null;
   grounding_policy?: string | null;
 }
@@ -156,6 +160,8 @@ export interface ConversationDataset extends RcaDataset {
 export interface RcaDataset {
   id?: number;
   dataset_id: string;
+  dataset_name?: string | null;
+  physical_table_name?: string | null;
   job_id?: number | null;
   conversation_id?: number | null;
   filename?: string | null;

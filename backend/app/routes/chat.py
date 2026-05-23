@@ -17,8 +17,18 @@ from app.services.llm import LLMError, chat as llm_chat, stream_chat
 from app.services import uce_client
 from app import vector_store
 from app.tokenizer import tokenize as _tokenize
-from app.rca.query_planner import QueryPlan, plan_query, execute_plan, format_results
+from app.rca import dataset_manager
+from app.rca.query_planner import (
+    DatasetMeta,
+    QueryPlan,
+    build_error_stats_fallback_plan,
+    execute_plan,
+    format_results,
+    load_field_taxonomy,
+    plan_query,
+)
 from app.rca.spec_loader import load_lte_call_kpi_spec
+from app.routes.xdr_schema import active_schema_id
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -608,15 +618,24 @@ async def chat(
     xdr_execution_ms: int | None = None
     xdr_activated = False
     xdr_pipeline_status = "SKIPPED (not_xdr)"
+    xdr_dataset_meta: DatasetMeta | None = None
 
     # --- Context Slimming & Lightweight Activation ---
     xdr_schema_hints: list[dict] = []
     candidate_fields_preview: list[str] = []
     all_fields_preview: list[str] = []
+    field_db_types_preview: dict[str, str] = {}
     
     if active_dataset:
         try:
+            meta_dict = await dataset_manager.get_dataset_info(active_dataset.dataset_id)
+            xdr_dataset_meta = DatasetMeta(
+                dataset_id=active_dataset.dataset_id,
+                dataset_name=str((meta_dict or {}).get("dataset_name") or active_dataset.dataset_id),
+                physical_table_name=str((meta_dict or {}).get("physical_table_name") or f"xdr_{active_dataset.dataset_id}"),
+            )
             all_specs = await asyncio.to_thread(load_lte_call_kpi_spec)
+            planner_schema_id = active_dataset.schema_id or await active_schema_id(db)
             
             # 1. DB에서 Schema 및 Alias 조회 (DB 수정 불필요)
             schema_query = (
@@ -624,10 +643,9 @@ async def chat(
                 .where(XdrFieldSchema.is_active == True)
                 .options(selectinload(XdrFieldSchema.keywords))
             )
-            if active_dataset.schema_id:
-                schema_query = schema_query.where(
-                    XdrFieldSchema.schema_id == active_dataset.schema_id
-                )
+            schema_query = schema_query.where(
+                XdrFieldSchema.schema_id == planner_schema_id
+            )
             schema_result = await db.execute(schema_query)
             schema_fields = list(schema_result.scalars().all())
             
@@ -693,10 +711,24 @@ async def chat(
             slimmed_specs = [spec for spec in all_specs if spec.name in candidate_field_names]
             if not slimmed_specs:
                 slimmed_specs = all_specs[:5]
+
+            candidate_taxonomy = await load_field_taxonomy(
+                db,
+                tuple(slimmed_specs),
+                schema_id=planner_schema_id,
+            )
+            field_db_types_preview = {
+                field.field_name: field.db_type
+                for field in candidate_taxonomy
+            }
                 
             xdr_schema_hints = [
                 {
                     "field_name": f.field_name,
+                    "db_type": field_db_types_preview.get(f.field_name, "TEXT"),
+                    "semantic_db_type": f.db_type or "",
+                    "category": f.category or f.spec_section or "",
+                    "role": f.role or "",
                     "group": f.description or "",
                     "aliases": [k.keyword for k in f.keywords],
                 }
@@ -708,63 +740,27 @@ async def chat(
             is_xdr_related = any(term in query_text for term in xdr_keywords)
             
             if is_xdr_related:
-                # 4. 단순 패턴 질의는 rule-based fallback SQL을 사용
-                fallback_sql = None
-                fallback_intent = None
-                if any(t in query_text for t in ("가입자", "imsi", "단말", "imei")) and any(t in query_text for t in ("에러", "오류", "실패", "장애", "원인")) and any(t in query_text for t in ("통계", "집계", "별")):
-                    group_col = "IMSI" if "imsi" in query_text or "가입자" in query_text else "IMEI"
-                    fallback_sql = f"SELECT {group_col}, first_error_interface_protocol, first_error_cause, COUNT(*) as cnt FROM {active_dataset.dataset_id} WHERE success_flag = 0 GROUP BY {group_col}, first_error_interface_protocol, first_error_cause ORDER BY cnt DESC LIMIT 50"
-                    fallback_intent = "group_by_error_stats"
-
                 try:
-                    if fallback_sql:
-                        xdr_query_plan = QueryPlan(
-                            is_xdr_related=True,
-                            intent=fallback_intent,
-                            sql=fallback_sql,
-                            description="Rule-based fallback pattern matched",
-                            confidence=1.0
+                    xdr_query_plan = None
+                    if any(t in query_text for t in ("가입자", "imsi", "단말", "imei")) and any(t in query_text for t in ("에러", "오류", "실패", "장애", "원인")) and any(t in query_text for t in ("통계", "집계", "별")):
+                        group_col = "IMSI" if "imsi" in query_text or "가입자" in query_text else "IMEI"
+                        xdr_query_plan = build_error_stats_fallback_plan(
+                            taxonomy=candidate_taxonomy,
+                            dataset_meta=xdr_dataset_meta,
+                            group_field=group_col,
                         )
-                    else:
-                        # 5. SQL planner prompt에는 전체 대화/검색문서/전체 schema를 넣지 말고 candidate fields만 넣으세요.
-                        # 6. planner 출력은 JSON only로 제한하세요.
-                        prompt = (
-                            "다음 질문에 답하기 위해 DuckDB SQL 쿼리를 작성하세요.\n"
-                            "반드시 아래 JSON 형식으로만 응답하고 다른 설명은 하지 마세요.\n"
-                            "{\n"
-                            '  "intent": "의도 요약",\n'
-                            '  "sql": "작성된 SQL",\n'
-                            '  "description": "쿼리 설명"\n'
-                            "}\n\n"
-                            f"Target Table: {active_dataset.dataset_id}\n\n"
-                            "Candidate Fields:\n"
+                    if xdr_query_plan is None:
+                        xdr_query_plan = await plan_query(
+                            user_message=data.message,
+                            dataset_id=active_dataset.dataset_id,
+                            model=conv.model,
+                            fields=tuple(slimmed_specs),
+                            db=db,
+                            schema_id=planner_schema_id,
+                            dataset_meta=xdr_dataset_meta,
                         )
-                        for spec in slimmed_specs:
-                            prompt += f"- {spec.name} ({spec.db_type}): {spec.description}\n"
-                        
-                        prompt += f"\n사용자 질문: {data.message}"
-
-                        llm_resp = await llm_chat(
-                            conv.model,
-                            [{"role": "user", "content": prompt}],
-                            options={"temperature": 0.0}
-                        )
-                        
-                        match = re.search(r'\{.*\}', llm_resp, re.DOTALL)
-                        if not match:
-                            raise ValueError("JSON 형식을 찾을 수 없습니다.")
-                            
-                        parsed = json.loads(match.group(0))
-                        if not parsed.get("sql"):
-                            raise ValueError("SQL이 비어있습니다.")
-                            
-                        xdr_query_plan = QueryPlan(
-                            is_xdr_related=True,
-                            intent=parsed.get("intent", "custom_sql"),
-                            sql=parsed.get("sql", ""),
-                            description=parsed.get("description", ""),
-                            confidence=0.8
-                        )
+                    if not xdr_query_plan.is_xdr_related:
+                        raise ValueError(xdr_query_plan.description or "planner returned not_xdr")
 
                     xdr_activated = True
                     _xdr_exec_start = time.perf_counter()
@@ -887,10 +883,13 @@ async def chat(
     )
     if active_dataset:
         prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+        prompt_metrics["xdr_dataset_name"] = xdr_dataset_meta.dataset_name if xdr_dataset_meta else active_dataset.dataset_id
+        prompt_metrics["xdr_physical_table_name"] = xdr_dataset_meta.physical_table_name if xdr_dataset_meta else f"xdr_{active_dataset.dataset_id}"
         prompt_metrics["xdr_pipeline_activated"] = xdr_activated
         prompt_metrics["xdr_pipeline_status"] = xdr_pipeline_status
         prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
         prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
+        prompt_metrics["xdr_field_db_types"] = field_db_types_preview
     if xdr_query_plan:
         prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
         prompt_metrics["xdr_query_description"] = xdr_query_plan.description
@@ -1019,10 +1018,13 @@ async def chat(
         # Preserve xDR fields regardless of whether UCE succeeded or fell back
         if active_dataset:
             prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+            prompt_metrics["xdr_dataset_name"] = xdr_dataset_meta.dataset_name if xdr_dataset_meta else active_dataset.dataset_id
+            prompt_metrics["xdr_physical_table_name"] = xdr_dataset_meta.physical_table_name if xdr_dataset_meta else f"xdr_{active_dataset.dataset_id}"
             prompt_metrics["xdr_pipeline_activated"] = xdr_activated
             prompt_metrics["xdr_pipeline_status"] = xdr_pipeline_status
             prompt_metrics["xdr_selected_schema_fields"] = candidate_fields_preview
             prompt_metrics["xdr_candidate_fields_before_planner"] = all_fields_preview
+            prompt_metrics["xdr_field_db_types"] = field_db_types_preview
         if xdr_query_plan:
             prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
             prompt_metrics["xdr_query_description"] = xdr_query_plan.description

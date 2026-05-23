@@ -439,6 +439,7 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
   const columns = resultRows.length > 0 ? Object.keys(resultRows[0]) : [];
   const selectedFields = metrics.xdr_selected_schema_fields ?? [];
   const candidateFields = metrics.xdr_candidate_fields_before_planner ?? [];
+  const fieldDbTypes = metrics.xdr_field_db_types ?? {};
 
   return (
     <div className="rca-inv-panel">
@@ -453,9 +454,11 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
             <table className="rca-inv-kv-table">
               <tbody>
                 <tr><th>활성 데이터셋</th><td className="rca-inv-mono">{metrics.xdr_dataset_id}</td></tr>
+                <tr><th>Dataset Name</th><td className="rca-inv-mono">{metrics.xdr_dataset_name ?? metrics.xdr_dataset_id}</td></tr>
+                <tr><th>Physical Table</th><td className="rca-inv-mono">{metrics.xdr_physical_table_name ?? '-'}</td></tr>
                 <tr>
                   <th>Pipeline</th>
-                  <td>{metrics.xdr_pipeline_activated === true ? '✅ ACTIVATED' : '⏭ SKIPPED (not_xdr)'}</td>
+                  <td>{metrics.xdr_pipeline_activated === true ? '✅ ACTIVATED' : `⏭ ${metrics.xdr_pipeline_status || 'SKIPPED (not_xdr)'}`}</td>
                 </tr>
                 {metrics.xdr_planner_confidence != null && (
                   <tr>
@@ -492,7 +495,11 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
                 <tbody>
                   <tr>
                     <th>선택 필드</th>
-                    <td className="rca-inv-mono">{selectedFields.length ? selectedFields.join(', ') : '-'}</td>
+                    <td className="rca-inv-mono">
+                      {selectedFields.length
+                        ? selectedFields.map((field) => `${field}:${fieldDbTypes[field] || '-'}`).join(', ')
+                        : '-'}
+                    </td>
                   </tr>
                   <tr>
                     <th>후보 풀</th>
