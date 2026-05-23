@@ -259,7 +259,14 @@ function ChatDebugPanel({ metrics }: { metrics: PromptMetrics }) {
     ['응답 토큰 (추정)', metrics.response_tokens?.toLocaleString() ?? '-'],
     ['응답 글자 수', metrics.response_chars?.toLocaleString() ?? '-'],
     ['토큰/초', formatTokensPerSec()],
+    ['Grounding Policy', metrics.grounding_policy ?? '-'],
     ['xDR 데이터셋', metrics.xdr_dataset_id ?? '-'],
+    ['xDR Pipeline', metrics.xdr_pipeline_activated === true
+      ? '✅ ACTIVATED'
+      : metrics.xdr_dataset_id ? '⏭ SKIPPED (not_xdr)' : '-'],
+    ['xDR Planner 신뢰도', metrics.xdr_planner_confidence != null
+      ? `${(metrics.xdr_planner_confidence * 100).toFixed(0)}%`
+      : '-'],
     ['xDR 쿼리 의도', metrics.xdr_query_intent ?? '-'],
     ['xDR 쿼리 설명', metrics.xdr_query_description ?? '-'],
     ['xDR SQL', metrics.xdr_query_sql ?? '-'],
@@ -439,10 +446,20 @@ function RcaInvestigationDebugPanel({ metrics }: { metrics: PromptMetrics }) {
         <div className="rca-inv-body">
           {/* 1. Dataset Selection */}
           <div className="rca-inv-section">
-            <div className="rca-inv-section-title">1. 데이터셋 선택</div>
+            <div className="rca-inv-section-title">1. 데이터셋 선택 &amp; Pipeline 상태</div>
             <table className="rca-inv-kv-table">
               <tbody>
                 <tr><th>활성 데이터셋</th><td className="rca-inv-mono">{metrics.xdr_dataset_id}</td></tr>
+                <tr>
+                  <th>Pipeline</th>
+                  <td>{metrics.xdr_pipeline_activated === true ? '✅ ACTIVATED' : '⏭ SKIPPED (not_xdr)'}</td>
+                </tr>
+                {metrics.xdr_planner_confidence != null && (
+                  <tr>
+                    <th>Pre-filter 신뢰도</th>
+                    <td>{(metrics.xdr_planner_confidence * 100).toFixed(0)}%</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

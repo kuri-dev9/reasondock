@@ -232,6 +232,7 @@ def _uce_metrics(
         "uce_input_document_count": input_document_count,
         "uce_input_rag_chunk_count": input_rag_chunk_count,
         "uce_input_rag_context_chars": input_rag_context_chars,
+        "grounding_policy": metadata.get("grounding_policy"),
     }
 
 
@@ -552,6 +553,7 @@ async def chat(
     xdr_query_plan: QueryPlan | None = None
     xdr_rows: list[dict] = []
     xdr_execution_ms: int | None = None
+    xdr_activated = False
     if active_dataset:
         try:
             fields = await asyncio.to_thread(load_lte_call_kpi_spec)
@@ -563,15 +565,21 @@ async def chat(
                 db=db,
                 schema_id=active_dataset.schema_id,
             )
-            if xdr_query_plan:
+            if xdr_query_plan.is_xdr_related:
+                xdr_activated = True
                 _xdr_exec_start = time.perf_counter()
                 xdr_rows = await execute_plan(xdr_query_plan, active_dataset.dataset_id)
                 xdr_execution_ms = int((time.perf_counter() - _xdr_exec_start) * 1000)
                 xdr_context = format_results(xdr_rows, xdr_query_plan, active_dataset.dataset_id)
                 logger.info(
-                    "xDR query: conv_id=%s dataset=%s intent=%s rows=%d exec_ms=%d",
-                    conversation_id, active_dataset.dataset_id, xdr_query_plan.intent,
-                    len(xdr_rows), xdr_execution_ms,
+                    "xDR pipeline ACTIVATED: conv_id=%s dataset=%s intent=%s rows=%d confidence=%.2f",
+                    conversation_id, active_dataset.dataset_id,
+                    xdr_query_plan.intent, len(xdr_rows), xdr_query_plan.confidence,
+                )
+            else:
+                logger.info(
+                    "xDR pipeline SKIPPED: conv_id=%s reason=%s confidence=%.2f",
+                    conversation_id, xdr_query_plan.intent, xdr_query_plan.confidence,
                 )
         except Exception:
             logger.exception("xDR Query Planning 실패 (conv_id=%s)", conversation_id)
@@ -656,13 +664,15 @@ async def chat(
     )
     if active_dataset:
         prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+        prompt_metrics["xdr_pipeline_activated"] = xdr_activated
     if xdr_query_plan:
         prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
         prompt_metrics["xdr_query_description"] = xdr_query_plan.description
-        prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql
+        prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql if xdr_activated else ""
         prompt_metrics["xdr_query_row_count"] = len(xdr_rows)
         prompt_metrics["xdr_query_result_rows"] = xdr_rows
         prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
+        prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
 
     if data.use_uce and settings.uce_enabled:
         rag_chunks = []
@@ -721,7 +731,7 @@ async def chat(
                 }
             )
         # xDR 쿼리 결과를 rag_chunks 맨 앞에 삽입 (최우선 컨텍스트)
-        if xdr_context and active_dataset:
+        if xdr_context and xdr_activated:
             rag_chunks.insert(0, {
                 "id": "xdr_query_result",
                 "title": f"xDR 조사 결과: {active_dataset.dataset_id}",
@@ -780,13 +790,15 @@ async def chat(
         # Preserve xDR fields regardless of whether UCE succeeded or fell back
         if active_dataset:
             prompt_metrics["xdr_dataset_id"] = active_dataset.dataset_id
+            prompt_metrics["xdr_pipeline_activated"] = xdr_activated
         if xdr_query_plan:
             prompt_metrics["xdr_query_intent"] = xdr_query_plan.intent
             prompt_metrics["xdr_query_description"] = xdr_query_plan.description
-            prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql
+            prompt_metrics["xdr_query_sql"] = xdr_query_plan.sql if xdr_activated else ""
             prompt_metrics["xdr_query_row_count"] = len(xdr_rows)
             prompt_metrics["xdr_query_result_rows"] = xdr_rows
             prompt_metrics["xdr_query_execution_ms"] = xdr_execution_ms
+            prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
 
     async def generate():
         full_response = ""

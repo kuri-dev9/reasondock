@@ -23,12 +23,69 @@ from app.routes.xdr_schema import ensure_defaults
 
 logger = logging.getLogger(__name__)
 
+# Rule-based pre-filter patterns (LLM-free, fast)
+_XDR_STRONG_PATTERNS = [
+    r"\bIMSI\b", r"\bIMEI\b", r"\bMME\b", r"\beNB\b",
+    r"\bS1AP\b", r"\bGTP\b", r"\bNAS\b", r"\bS6a\b",
+    r"\bS11\b", r"\bS1\b", r"\bTAC\b", r"\bEPS\b",
+    r"attach", r"detach", r"handover", r"paging",
+    r"bearer", r"session",
+    r"실패\s*원인", r"장애\s*원인", r"drop\s*cause",
+    r"실패율", r"성공률", r"kpi", r"cause\s*code",
+    r"release\s*cause", r"error\s*code",
+    r"단말별", r"기지국별", r"MME별", r"eNB별",
+    r"IMSI별", r"시간대별",
+    r"집계", r"분포", r"통계", r"상위\s*\d+",
+    r"타임라인", r"시계열",
+]
+
+_NOT_XDR_PATTERNS = [
+    r"^(안녕|hello|hi|hey)\b",
+    r"^(고마워|감사|thanks|thank you)\b",
+    r"^(잘\s*가|bye|goodbye)\b",
+    r"^(ㅋ+|ㅎ+|ㅠ+|ㅜ+)",
+    r"^(오케이|ok|okay|알겠|알았)\b",
+    r"(날씨|주식|뉴스|맛집|영화|음악|스포츠)",
+    r"(삼성전자|애플|구글|테슬라)\s*(주가|뉴스|소식|협상)",
+]
+
+_XDR_TERM_KEYWORDS = [
+    "단말", "가입자", "인터페이스", "프로토콜", "원인",
+    "실패", "장애", "attach", "detach", "bearer",
+    "epc", "lte", "5g", "nr", "volte",
+    "호", "콜", "call", "failure", "error",
+]
+
+
+def _is_xdr_related_rule(user_message: str) -> tuple[bool, float]:
+    """Rule-based xDR relevance check. No LLM, fast."""
+    msg_lower = user_message.lower()
+
+    for pattern in _NOT_XDR_PATTERNS:
+        if re.search(pattern, user_message, re.IGNORECASE):
+            return False, 0.95
+
+    matched = [p for p in _XDR_STRONG_PATTERNS if re.search(p, user_message, re.IGNORECASE)]
+    if matched:
+        confidence = min(0.95, 0.6 + 0.1 * len(matched))
+        return True, round(confidence, 2)
+
+    term_hits = [t for t in _XDR_TERM_KEYWORDS if t in msg_lower]
+    if len(term_hits) >= 2:
+        return True, 0.65
+    if len(term_hits) == 1:
+        return True, 0.45
+
+    return False, 0.80
+
 
 @dataclass
 class QueryPlan:
+    is_xdr_related: bool
+    confidence: float
     intent: str
-    sql: str
     description: str
+    sql: str
 
 
 @dataclass(frozen=True)
@@ -166,11 +223,24 @@ async def plan_query(
     fields: tuple[FieldSpec, ...],
     db: AsyncSession | None = None,
     schema_id: int | None = None,
-) -> QueryPlan | None:
-    """Convert user natural language message to DuckDB SQL.
+) -> QueryPlan:
+    """Two-stage xDR query planner. Always returns QueryPlan (never None).
 
-    Returns None if the question is not xDR-related or if LLM call fails.
+    Stage 1: rule-based pre-filter (no LLM, fast).
+    Stage 2: LLM SQL generation (only when is_xdr_related=True).
     """
+    # Stage 1: rule-based gate
+    is_xdr_related, confidence = _is_xdr_related_rule(user_message)
+    if not is_xdr_related:
+        return QueryPlan(
+            is_xdr_related=False,
+            confidence=confidence,
+            intent="not_xdr",
+            description="xDR 조사와 무관한 질문",
+            sql="",
+        )
+
+    # Stage 2: LLM SQL generation
     from app.services.llm import chat as llm_chat
 
     taxonomy = await _load_field_taxonomy(db, fields, schema_id=schema_id)
@@ -218,36 +288,56 @@ async def plan_query(
             options={"temperature": 0.1, "num_predict": 512},
             timeout=60.0,
         )
-        # LLM 응답에서 JSON 추출 — 잘못된 \escape 보정 포함
-        plan = None
+        plan_data = None
         for match in re.finditer(r'\{.*?\}', response, re.DOTALL):
             raw = match.group()
             try:
-                plan = json.loads(raw)
+                plan_data = json.loads(raw)
                 break
             except json.JSONDecodeError:
-                # \escape 보정 후 재시도
                 try:
                     cleaned = re.sub(r'(?<!\\)\\(?!["\\bfnrtu/\n\r\t])', r'\\\\', raw)
-                    plan = json.loads(cleaned)
+                    plan_data = json.loads(cleaned)
                     break
                 except json.JSONDecodeError:
                     continue
-        if plan is None:
-            return None
-        if plan.get("intent") == "not_xdr":
-            return None
-        sql = plan.get("sql", "").strip()
+
+        if plan_data is None or plan_data.get("intent") == "not_xdr":
+            return QueryPlan(
+                is_xdr_related=False,
+                confidence=0.9,
+                intent="not_xdr",
+                description="LLM이 xDR 조사와 무관하다고 판단",
+                sql="",
+            )
+
+        sql = plan_data.get("sql", "").strip()
         if not sql or not sql.upper().startswith("SELECT"):
-            return None
+            return QueryPlan(
+                is_xdr_related=False,
+                confidence=0.5,
+                intent="not_xdr",
+                description="유효한 SQL 생성 실패",
+                sql="",
+            )
+
         return QueryPlan(
-            intent=plan.get("intent", "unknown"),
+            is_xdr_related=True,
+            confidence=confidence,
+            intent=plan_data.get("intent", "unknown"),
+            description=plan_data.get("description", ""),
             sql=sql,
-            description=plan.get("description", ""),
         )
+
     except Exception as exc:
-        logger.warning("Query planning 실패: %s", exc)
-        return None
+        logger.warning("Query planning LLM 실패: %s", exc)
+        return QueryPlan(
+            is_xdr_related=False,
+            confidence=0.0,
+            intent="not_xdr",
+            description=f"LLM 호출 실패: {exc}",
+            sql="",
+        )
 
 
 async def execute_plan(

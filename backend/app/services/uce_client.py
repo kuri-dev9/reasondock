@@ -81,6 +81,13 @@ async def build_context(
             },
         )
 
+    _dataset_sources = {"xdr_dataset", "dataset"}
+    _non_retrieval_sources = {"xdr_dataset", "dataset", "attachment"}
+    has_xdr = any(c.get("source") == "xdr_dataset" for c in rag_chunks)
+    has_dataset = any(c.get("source") in _dataset_sources for c in rag_chunks)
+    has_retrieval = any(c.get("source") not in _non_retrieval_sources for c in rag_chunks)
+    retrieval_count = sum(1 for c in rag_chunks if c.get("source") not in _non_retrieval_sources)
+
     payload = {
         "session_id": str(conversation_id),
         "current_message": {
@@ -95,6 +102,10 @@ async def build_context(
             "compression_level": "medium",
             "include_trace": True,
         },
+        "has_xdr_context": has_xdr,
+        "has_dataset_context": has_dataset,
+        "has_retrieval_context": has_retrieval,
+        "retrieval_count": retrieval_count,
     }
 
     started = time.perf_counter()

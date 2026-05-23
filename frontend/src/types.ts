@@ -58,6 +58,9 @@ export interface PromptMetrics {
   xdr_query_row_count?: number | null;
   xdr_query_result_rows?: any[] | null;
   xdr_query_execution_ms?: number | null;
+  xdr_pipeline_activated?: boolean | null;
+  xdr_planner_confidence?: number | null;
+  grounding_policy?: string | null;
 }
 
 export interface RcaProcessingMetrics {
