@@ -225,6 +225,12 @@ export async function fetchRcaDatasetSummary(datasetId: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchRcaDatasetDetail(datasetId: string): Promise<{ by_interface: any[]; by_cause: any[] }> {
+  const res = await fetch(`${API_BASE}/rca/datasets/${datasetId}/detail`);
+  if (!res.ok) throw new Error('데이터셋 상세 분석 로드 실패');
+  return res.json();
+}
+
 export async function deleteRcaDataset(datasetId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/rca/datasets/${datasetId}`, {
     method: 'DELETE',

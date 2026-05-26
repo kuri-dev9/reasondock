@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ConversationDataset, RcaDataset } from '../types';
 import {
   fetchRcaDatasets,
@@ -8,6 +8,7 @@ import {
   setPrimaryDataset,
   deleteRcaDataset,
   fetchRcaDatasetSummary,
+  fetchRcaDatasetDetail,
 } from '../api';
 
 interface Props {
@@ -16,18 +17,24 @@ interface Props {
   conversationId?: number | null;
   selectedDatasetId?: string | null;
   onSelectDataset?: (datasetId: string | null) => void;
+  onRcaUpload?: (file: File) => Promise<void>;
+  onUploadComplete?: (datasetId: string) => void;
 }
 
 type Tab = 'conversation' | 'global';
 
-export default function RcaDatasetPanel({ visible, onClose, conversationId, selectedDatasetId, onSelectDataset }: Props) {
+export default function RcaDatasetPanel({ visible, onClose, conversationId, selectedDatasetId, onSelectDataset, onRcaUpload, onUploadComplete }: Props) {
   const [tab, setTab] = useState<Tab>(conversationId ? 'conversation' : 'global');
   const [allDatasets, setAllDatasets] = useState<RcaDataset[]>([]);
   const [convDatasets, setConvDatasets] = useState<ConversationDataset[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<Record<string, any>>({});
+  const [details, setDetails] = useState<Record<string, { by_interface: any[]; by_cause: any[] } | null>>({});
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [actingOn, setActingOn] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -48,7 +55,7 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
       setTab(conversationId ? 'conversation' : 'global');
       loadAll();
     }
-  }, [visible, loadAll]);
+  }, [visible, conversationId, loadAll]);
 
   const handleExpand = async (datasetId: string) => {
     if (expandedId === datasetId) { setExpandedId(null); return; }
@@ -58,6 +65,19 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
         const s = await fetchRcaDatasetSummary(datasetId);
         setSummaries((p) => ({ ...p, [datasetId]: s }));
       } catch {}
+    }
+  };
+
+  const handleLoadDetail = async (datasetId: string) => {
+    if (details[datasetId]) { setDetails((p) => ({ ...p, [datasetId]: null })); return; }
+    setDetailLoadingId(datasetId);
+    try {
+      const d = await fetchRcaDatasetDetail(datasetId);
+      setDetails((p) => ({ ...p, [datasetId]: d }));
+    } catch {
+      setDetails((p) => ({ ...p, [datasetId]: { by_interface: [], by_cause: [] } }));
+    } finally {
+      setDetailLoadingId(null);
     }
   };
 
@@ -107,6 +127,36 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
     } finally { setActingOn(null); }
   };
 
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onRcaUpload) return;
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setUploading(true);
+    try {
+      await onRcaUpload(file);
+
+      // RCA job은 비동기로 처리되므로 PROCESSING 포함해서 가장 최근 데이터셋 선택
+      const updated = await fetchRcaDatasets();
+      setAllDatasets(updated);
+
+      const newest = updated
+        .sort((a, b) =>
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        )[0];
+
+      if (newest) {
+        onSelectDataset?.(newest.dataset_id);
+        onUploadComplete?.(newest.dataset_id);
+      }
+      onClose();  // READY 여부 무관하게 패널 닫기
+    } catch (err: any) {
+      alert(err.message || 'xDR 업로드 실패');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const attachedIds = new Set(convDatasets.map((d) => d.dataset_id));
 
   const formatPeriod = (startUs?: number | null, endUs?: number | null) => {
@@ -128,10 +178,26 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
     return <span className={`rca-ds-badge ${cls}`}>{label}</span>;
   };
 
+  const renderDetailTable = (rows: any[], keyLabel: string, keyField: string) => {
+    if (!rows.length) return <div className="rca-ds-summary-row" style={{ color: 'var(--text-secondary)' }}>데이터 없음</div>;
+    return (
+      <table className="rca-ds-detail-table">
+        <thead><tr><th>{keyLabel}</th><th>건수</th></tr></thead>
+        <tbody>
+          {rows.map((r: any, i: number) => (
+            <tr key={i}><td>{r[keyField] || '(없음)'}</td><td>{r.cnt?.toLocaleString()}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
   const renderSummaryBody = (datasetId: string, summary: any) => {
     if (!summary) return <div className="rca-ds-summary-loading">로딩 중...</div>;
     const overall = summary.overall || {};
     const topFailures = summary.top_failures || [];
+    const detail = details[datasetId];
+    const loadingDetail = detailLoadingId === datasetId;
     return (
       <div className="rca-ds-summary">
         <div className="rca-ds-summary-row"><span>총 레코드</span><span>{overall.total?.toLocaleString() ?? '-'}</span></div>
@@ -155,6 +221,23 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
               </div>
             ))}
           </>
+        )}
+        <div className="rca-ds-detail-toggle">
+          <button
+            className="rca-ds-btn"
+            onClick={() => handleLoadDetail(datasetId)}
+            disabled={loadingDetail}
+          >
+            {loadingDetail ? '로딩 중...' : detail ? '상세 닫기' : '상세 보기'}
+          </button>
+        </div>
+        {detail && (
+          <div className="rca-ds-detail">
+            <div className="rca-ds-summary-label">인터페이스별 실패</div>
+            {renderDetailTable(detail.by_interface, '인터페이스', 'interface')}
+            <div className="rca-ds-summary-label" style={{ marginTop: 8 }}>원인별 실패</div>
+            {renderDetailTable(detail.by_cause, '원인 코드', 'cause')}
+          </div>
         )}
       </div>
     );
@@ -222,7 +305,28 @@ export default function RcaDatasetPanel({ visible, onClose, conversationId, sele
       <div className="knowledge-panel" onClick={(e) => e.stopPropagation()}>
         <div className="knowledge-header">
           <h3>🔍 RCA 데이터셋</h3>
-          <button className="knowledge-close" onClick={onClose}>×</button>
+          <div className="rca-panel-header-actions">
+            {onRcaUpload && (
+              <>
+                <button
+                  className="rca-upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  title="xDR .dat 파일 업로드"
+                >
+                  {uploading ? '업로드 중...' : '+ xDR 업로드'}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".dat"
+                  className="file-input-hidden"
+                  onChange={handleUpload}
+                />
+              </>
+            )}
+            <button className="knowledge-close" onClick={onClose}>×</button>
+          </div>
         </div>
 
         {conversationId && (

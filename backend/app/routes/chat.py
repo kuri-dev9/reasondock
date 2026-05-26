@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import re
@@ -11,24 +10,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.config import settings
-from app.models import Conversation, ConversationDataset, Message, Attachment, KnowledgeDocument, RcaDataset, XdrFieldSchema
+from app.models import Conversation, ConversationDataset, Message, Attachment, KnowledgeDocument, RcaDataset
 from app.schemas import ChatRequest
 from app.services.llm import LLMError, chat as llm_chat, stream_chat
 from app.services import uce_client
 from app import vector_store
 from app.tokenizer import tokenize as _tokenize
-from app.rca import dataset_manager
-from app.rca.query_planner import (
-    DatasetMeta,
-    QueryPlan,
-    build_error_stats_fallback_plan,
-    execute_plan,
-    format_results,
-    load_field_taxonomy,
-    plan_query,
-)
-from app.rca.spec_loader import load_lte_call_kpi_spec
-from app.routes.xdr_schema import active_schema_id
+from app.qie.planner.query_planner import DatasetMeta, QueryPlan
+from app.qie.pipeline.investigation import InvestigationResult, run_investigation
 
 router = APIRouter(prefix="/api/conversations", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -97,30 +86,6 @@ CONTINUATION_ENTITY_STOPWORDS = {
     "현황",
     "협상",
 }
-
-XDR_QUERY_SYNONYMS = {
-    "에러": ["error", "cause", "실패", "오류", "장애"],
-    "오류": ["error", "cause", "실패", "에러", "장애"],
-    "장애": ["failure", "error", "cause", "실패", "오류원인", "장애원인"],
-    "실패": ["failure", "error", "cause", "success_flag", "first_error"],
-    "원인": ["cause", "first_error_cause", "last_error_cause"],
-    "가입자": ["imsi", "subscriber", "단말"],
-    "단말": ["imsi", "imei", "ue", "terminal"],
-    "통계": ["count", "cnt", "group", "집계"],
-    "집계": ["count", "cnt", "group", "통계"],
-}
-
-
-def _expand_xdr_query_terms(message: str) -> set[str]:
-    terms = set(re.findall(r"[a-z0-9가-힣]+", message.lower()))
-    for token in list(terms):
-        if token.endswith("별") and len(token) > 1:
-            terms.add(token[:-1])
-        for key, values in XDR_QUERY_SYNONYMS.items():
-            if key in token or token in key:
-                terms.update(value.lower() for value in values)
-    return {term for term in terms if term}
-
 
 def _estimate_prompt_tokens(messages: list[dict]) -> int:
     text = "\n".join(str(message.get("content", "")) for message in messages)
@@ -611,197 +576,34 @@ async def chat(
             context_parts.append(f"[첨부파일: {att.filename}]\n{att.content_text[:8000]}")
         attachment_context = "\n\n".join(context_parts)
 
-    # xDR 데이터셋 Query Planning (legacy path용 컨텍스트 구성)
-    xdr_context = ""
-    xdr_query_plan: QueryPlan | None = None
-    xdr_rows: list[dict] = []
-    xdr_execution_ms: int | None = None
-    xdr_activated = False
-    xdr_pipeline_status = "SKIPPED (not_xdr)"
-    xdr_dataset_meta: DatasetMeta | None = None
-
-    # --- Context Slimming & Lightweight Activation ---
-    xdr_schema_hints: list[dict] = []
-    candidate_fields_preview: list[str] = []
-    all_fields_preview: list[str] = []
-    field_db_types_preview: dict[str, str] = {}
-    
+    # xDR 데이터셋 Query Planning
+    xdr_inv: InvestigationResult | None = None
     if active_dataset:
-        try:
-            meta_dict = await dataset_manager.get_dataset_info(active_dataset.dataset_id)
-            xdr_dataset_meta = DatasetMeta(
-                dataset_id=active_dataset.dataset_id,
-                dataset_name=str((meta_dict or {}).get("dataset_name") or active_dataset.dataset_id),
-                physical_table_name=str((meta_dict or {}).get("physical_table_name") or f"xdr_{active_dataset.dataset_id}"),
-            )
-            all_specs = await asyncio.to_thread(load_lte_call_kpi_spec)
-            planner_schema_id = active_dataset.schema_id or await active_schema_id(db)
-            
-            # 1. DB에서 Schema 및 Alias 조회 (DB 수정 불필요)
-            schema_query = (
-                select(XdrFieldSchema)
-                .where(XdrFieldSchema.is_active == True)
-                .options(selectinload(XdrFieldSchema.keywords))
-            )
-            schema_query = schema_query.where(
-                XdrFieldSchema.schema_id == planner_schema_id
-            )
-            schema_result = await db.execute(schema_query)
-            schema_fields = list(schema_result.scalars().all())
-            
-            all_fields_preview = [f.field_name for f in schema_fields]
-            
-            # 2. Runtime Candidate Selection
-            query_text = data.message.lower()
-            query_tokens = _expand_xdr_query_terms(data.message)
-            
-            scored_fields = []
-            for f in schema_fields:
-                score = 0
-                field_name_lower = f.field_name.lower() if f.field_name else ""
-                description_lower = f.description.lower() if f.description else ""
-                semantic_text = " ".join(
-                    str(value or "").lower()
-                    for value in (f.description, f.category, f.spec_section, f.role, f.db_type)
-                )
-                
-                if any(t in field_name_lower for t in query_tokens) or field_name_lower in query_text:
-                    score += 2
-                if any(t in description_lower for t in query_tokens):
-                    score += 1
-                if any(t in semantic_text for t in query_tokens):
-                    score += 1
-                if ("통계" in query_tokens or "집계" in query_tokens or "별" in query_text) and f.groupable:
-                    score += 0.5
-                if ("에러" in query_text or "오류" in query_text or "장애" in query_text or "실패" in query_text) and (
-                    "error" in field_name_lower or "cause" in field_name_lower or f.role == "cause_code"
-                ):
-                    score += 2
-                
-                for k in f.keywords:
-                    alias = k.keyword.lower()
-                    if alias in query_text or alias in query_tokens:
-                        score += 3
-                
-                scored_fields.append((score, f))
-            
-            # 상위 K개 필터링하여 Planner context 폭발 방지 (Slimming)
-            scored_fields.sort(key=lambda x: x[0], reverse=True)
-            candidate_schema_fields = [sf for s, sf in scored_fields if s > 0][:15]
-            schema_by_name = {field.field_name: field for field in schema_fields}
-            essential_names: list[str] = []
-            if any(term in query_text for term in ("에러", "오류", "장애", "실패", "failure", "error", "cause")):
-                essential_names.extend(["attempt_flag", "success_flag", "first_error_cause", "first_error_interface_protocol"])
-            if any(term in query_text for term in ("가입자", "단말", "imsi", "ue")):
-                essential_names.append("IMSI")
-            if any(term in query_text for term in ("기기", "imei", "terminal")):
-                essential_names.append("IMEI")
-            existing_candidate_names = {field.field_name for field in candidate_schema_fields}
-            for name in essential_names:
-                field = schema_by_name.get(name)
-                if field is not None and name not in existing_candidate_names:
-                    candidate_schema_fields.append(field)
-                    existing_candidate_names.add(name)
-            if not candidate_schema_fields:
-                candidate_schema_fields = [sf for s, sf in scored_fields][:5]  # Fallback
-                
-            candidate_field_names = {f.field_name for f in candidate_schema_fields}
-            candidate_fields_preview = [f.field_name for f in candidate_schema_fields]
-            
-            slimmed_specs = [spec for spec in all_specs if spec.name in candidate_field_names]
-            if not slimmed_specs:
-                slimmed_specs = all_specs[:5]
+        xdr_inv = await run_investigation(
+            active_dataset=active_dataset,
+            db=db,
+            message=data.message,
+            model=conv.model,
+            conversation_id=conversation_id,
+        )
+        if xdr_inv.clear_rag:
+            rag_context = ""
+            rag_references = []
+            results = []
+            all_results = []
+            priority_doc_ids = set()
 
-            candidate_taxonomy = await load_field_taxonomy(
-                db,
-                tuple(slimmed_specs),
-                schema_id=planner_schema_id,
-            )
-            field_db_types_preview = {
-                field.field_name: field.db_type
-                for field in candidate_taxonomy
-            }
-                
-            xdr_schema_hints = [
-                {
-                    "field_name": f.field_name,
-                    "db_type": field_db_types_preview.get(f.field_name, "TEXT"),
-                    "semantic_db_type": f.db_type or "",
-                    "category": f.category or f.spec_section or "",
-                    "role": f.role or "",
-                    "group": f.description or "",
-                    "aliases": [k.keyword for k in f.keywords],
-                }
-                for f in candidate_schema_fields
-            ]
-
-            # 1. xDR relevance detection 결과와 planner 실행 결과를 분리
-            xdr_keywords = {"통계", "집계", "에러", "오류", "실패", "원인", "장애", "가입자", "단말", "imsi", "imei", "추이", "비율", "건수", "조회", "분석", "비교"}
-            is_xdr_related = any(term in query_text for term in xdr_keywords)
-            
-            if is_xdr_related:
-                try:
-                    xdr_query_plan = None
-                    if any(t in query_text for t in ("가입자", "imsi", "단말", "imei")) and any(t in query_text for t in ("에러", "오류", "실패", "장애", "원인")) and any(t in query_text for t in ("통계", "집계", "별")):
-                        group_col = "IMSI" if "imsi" in query_text or "가입자" in query_text else "IMEI"
-                        xdr_query_plan = build_error_stats_fallback_plan(
-                            taxonomy=candidate_taxonomy,
-                            dataset_meta=xdr_dataset_meta,
-                            group_field=group_col,
-                        )
-                    if xdr_query_plan is None:
-                        xdr_query_plan = await plan_query(
-                            user_message=data.message,
-                            dataset_id=active_dataset.dataset_id,
-                            model=conv.model,
-                            fields=tuple(slimmed_specs),
-                            db=db,
-                            schema_id=planner_schema_id,
-                            dataset_meta=xdr_dataset_meta,
-                        )
-                    if not xdr_query_plan.is_xdr_related:
-                        raise ValueError(xdr_query_plan.description or "planner returned not_xdr")
-
-                    xdr_activated = True
-                    _xdr_exec_start = time.perf_counter()
-                    xdr_rows = await execute_plan(xdr_query_plan, active_dataset.dataset_id)
-                    xdr_execution_ms = int((time.perf_counter() - _xdr_exec_start) * 1000)
-                    xdr_context = format_results(xdr_rows, xdr_query_plan, active_dataset.dataset_id)
-                    xdr_pipeline_status = "COMPLETED"
-                    logger.info(
-                        "xDR pipeline ACTIVATED: conv_id=%s dataset=%s intent=%s rows=%d confidence=%.2f",
-                        conversation_id, active_dataset.dataset_id,
-                        xdr_query_plan.intent, len(xdr_rows), xdr_query_plan.confidence,
-                    )
-                except Exception as e:
-                    # 2. relevance=true이면 planner 실패 시에도 FAILED(planner_error)로 표시
-                    xdr_pipeline_status = "FAILED (planner_error)"
-                    logger.error(f"xDR Planner execution failed: {e}")
-                    
-                    # 3. planner 실패 시 일반 문서 RAG로 fallback하지 않음
-                    rag_context = ""
-                    rag_references = []
-                    results = []
-                    all_results = []
-                    priority_doc_ids = set()
-                    
-                    xdr_context = f"xDR 분석 실패: 데이터 추출 계획을 생성하지 못했습니다. (사유: {e})"
-                    xdr_activated = False
-                    
-                    xdr_query_plan = QueryPlan(
-                        is_xdr_related=True,
-                        intent="planner_error",
-                        sql="",
-                        description=str(e),
-                        confidence=0.0
-                    )
-            else:
-                logger.info(
-                    "xDR pipeline SKIPPED: conv_id=%s reason=not_xdr",
-                    conversation_id
-                )
-        except Exception:
-            logger.exception("xDR Query Planning 실패 (conv_id=%s)", conversation_id)
+    xdr_context = xdr_inv.xdr_context if xdr_inv else ""
+    xdr_query_plan: QueryPlan | None = xdr_inv.xdr_query_plan if xdr_inv else None
+    xdr_rows: list[dict] = xdr_inv.xdr_rows if xdr_inv else []
+    xdr_execution_ms: int | None = xdr_inv.xdr_execution_ms if xdr_inv else None
+    xdr_activated: bool = xdr_inv.xdr_activated if xdr_inv else False
+    xdr_pipeline_status: str = xdr_inv.xdr_pipeline_status if xdr_inv else "SKIPPED (not_xdr)"
+    xdr_dataset_meta: DatasetMeta | None = xdr_inv.xdr_dataset_meta if xdr_inv else None
+    xdr_schema_hints: list[dict] = xdr_inv.xdr_schema_hints if xdr_inv else []
+    candidate_fields_preview: list[str] = xdr_inv.candidate_fields_preview if xdr_inv else []
+    all_fields_preview: list[str] = xdr_inv.all_fields_preview if xdr_inv else []
+    field_db_types_preview: dict[str, str] = xdr_inv.field_db_types_preview if xdr_inv else {}
 
     # 시스템 프롬프트 구성
     system_parts = []
@@ -900,6 +702,38 @@ async def chat(
         prompt_metrics["xdr_planner_confidence"] = xdr_query_plan.confidence
         prompt_metrics["xdr_raw_query_result_preview"] = str(xdr_rows[:3]) if xdr_rows else "[]"
 
+    if xdr_inv and xdr_inv.direct_rendered:
+        _direct_content = xdr_context
+        _direct_metrics = dict(prompt_metrics)
+        _direct_metrics["direct_rendered"] = True
+        _direct_metrics["model"] = conv.model
+        _direct_metrics["response_chars"] = len(_direct_content)
+
+        async def direct_generate():
+            chunk_size = 200
+            for i in range(0, len(_direct_content), chunk_size):
+                yield f"data: {json.dumps({'token': _direct_content[i:i + chunk_size]})}\n\n"
+            assistant_message = Message(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=_direct_content,
+                references=None,
+                metrics=_direct_metrics,
+            )
+            db.add(assistant_message)
+            await db.commit()
+            title = None
+            if is_first_message:
+                title = await generate_title(conv.model, data.message, _direct_content)
+                await db.execute(
+                    update(Conversation).where(Conversation.id == conversation_id).values(title=title)
+                )
+                await db.commit()
+            done_data: dict = {"done": True, "title": title, "metadata": _direct_metrics}
+            yield f"data: {json.dumps(done_data)}\n\n"
+
+        return StreamingResponse(direct_generate(), media_type="text/event-stream")
+
     if data.use_uce and settings.uce_enabled:
         # xdr_schema_hints는 위 Slimming 단계에서 계산된 값 재사용
         rag_chunks = []
@@ -965,6 +799,15 @@ async def chat(
                 "content": xdr_context,
                 "source": "xdr_dataset",
                 "importance": 0.95,
+                "content_type": "text",
+            })
+        if xdr_inv and xdr_inv.rca_triggered and xdr_inv.rca_context:
+            rag_chunks.append({
+                "id": "rca_analysis",
+                "title": "RCA 인과 분석",
+                "content": xdr_inv.rca_context,
+                "source": "rca_engine",
+                "importance": 0.90,
                 "content_type": "text",
             })
 

@@ -15,13 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import async_session, get_db
 from app.models import Conversation, ConversationDataset, Message, RcaDataset, RcaJob, RcaResult, XdrSchemaProfile
-from app.rca import dataset_manager
-from app.rca.duckdb_store import make_dataset_id
+from app.qie.datasets import dataset_manager
+from app.qie.datasets.duckdb_store import make_dataset_id
 from app.rca.llm_gate import should_invoke_llm
-from app.rca.parser import parse_xdr_file
+from app.qie.datasets.parser import parse_xdr_file
 from app.rca.pipeline import analyze_xdr_file
 from app.rca.prompt_builder import build_llm_context, build_rca_prompt
-from app.rca.spec_loader import load_lte_call_kpi_spec
+from app.qie.schema.spec_loader import load_lte_call_kpi_spec
 from app.routes.xdr_schema import active_schema_id
 from app.services.llm import stream_chat as llm_stream_chat
 from app.services import uce_client
@@ -734,6 +734,36 @@ async def get_dataset_summary(dataset_id: str):
     if summary is None:
         raise HTTPException(status_code=404, detail="데이터셋 요약을 찾을 수 없습니다")
     return summary
+
+
+@router.get("/datasets/{dataset_id}/detail")
+async def get_dataset_detail(dataset_id: str):
+    """인터페이스별/원인별 실패 통계 — DuckDB 직접 집계."""
+    import asyncio as _asyncio
+    from app.qie.datasets.duckdb_store import query_records
+
+    table = f"xdr_{dataset_id}"
+    base_where = f"WHERE attempt_flag='1' AND success_flag='0'"
+
+    async def _run(sql: str) -> list[dict]:
+        try:
+            return await _asyncio.to_thread(query_records, dataset_id, sql)
+        except Exception:
+            return []
+
+    by_interface, by_cause = await _asyncio.gather(
+        _run(
+            f'SELECT first_error_interface_protocol AS interface, COUNT(*) AS cnt '
+            f'FROM "{table}" {base_where} '
+            f'GROUP BY first_error_interface_protocol ORDER BY cnt DESC LIMIT 10'
+        ),
+        _run(
+            f'SELECT first_error_cause AS cause, COUNT(*) AS cnt '
+            f'FROM "{table}" {base_where} '
+            f'GROUP BY first_error_cause ORDER BY cnt DESC LIMIT 10'
+        ),
+    )
+    return {"by_interface": by_interface, "by_cause": by_cause}
 
 
 @router.delete("/datasets/{dataset_id}", status_code=204)

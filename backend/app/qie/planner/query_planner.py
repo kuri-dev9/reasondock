@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import XdrFieldSchema
-from app.rca.spec_loader import FieldSpec
+from app.qie.schema.spec_loader import FieldSpec
 from app.routes.xdr_schema import ensure_defaults
 
 logger = logging.getLogger(__name__)
@@ -289,10 +289,96 @@ def _normalize_schema_literals(sql: str, taxonomy: list[FieldTaxonomy]) -> str:
     return sql
 
 
+def _split_top_level_csv(text: str) -> list[str]:
+    parts: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: str | None = None
+    for char in text:
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            current.append(char)
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")" and depth > 0:
+            depth -= 1
+        if char == "," and depth == 0:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+            continue
+        current.append(char)
+    part = "".join(current).strip()
+    if part:
+        parts.append(part)
+    return parts
+
+
+def _strip_identifier(identifier: str) -> str:
+    cleaned = identifier.strip()
+    if "." in cleaned:
+        cleaned = cleaned.rsplit(".", 1)[-1].strip()
+    if cleaned.startswith('"') and cleaned.endswith('"'):
+        cleaned = cleaned[1:-1].replace('""', '"')
+    return cleaned
+
+
+def _selected_plain_field(expr: str, taxonomy_by_lower: dict[str, str]) -> str | None:
+    # Aggregates, functions, expressions and literals are not GROUP BY columns.
+    if "(" in expr or ")" in expr or any(op in expr for op in ("+", "-", "*", "/", "||")):
+        return None
+    base = re.split(r"(?i)\s+AS\s+", expr, maxsplit=1)[0].strip()
+    base = re.split(r"\s+", base, maxsplit=1)[0].strip()
+    field_name = _strip_identifier(base)
+    return taxonomy_by_lower.get(field_name.lower())
+
+
+def _normalize_group_by_columns(sql: str, taxonomy: list[FieldTaxonomy]) -> str:
+    if not re.search(r"(?i)\bGROUP\s+BY\b", sql):
+        return sql
+
+    select_match = re.search(r"(?is)\bSELECT\s+(.*?)\s+\bFROM\b", sql)
+    group_match = re.search(
+        r"(?is)\bGROUP\s+BY\s+(.*?)(?=\s+\bHAVING\b|\s+\bORDER\s+BY\b|\s+\bLIMIT\b|$)",
+        sql,
+    )
+    if not select_match or not group_match:
+        return sql
+
+    taxonomy_by_lower = {field.field_name.lower(): field.field_name for field in taxonomy}
+    selected_fields = [
+        field
+        for expr in _split_top_level_csv(select_match.group(1))
+        if (field := _selected_plain_field(expr, taxonomy_by_lower))
+    ]
+    if not selected_fields:
+        return sql
+
+    grouped_parts = _split_top_level_csv(group_match.group(1))
+    grouped_names = {_strip_identifier(part).lower() for part in grouped_parts}
+    missing = [field for field in selected_fields if field.lower() not in grouped_names]
+    if not missing:
+        return sql
+
+    expanded_group = ", ".join(grouped_parts + [quote_identifier(field) for field in missing])
+    return sql[:group_match.start(1)] + expanded_group + sql[group_match.end(1):]
+
+
 def normalize_generated_sql(sql: str, *, dataset_meta: DatasetMeta, taxonomy: list[FieldTaxonomy]) -> str:
     normalized = " ".join(sql.strip().split())
+    # "SELECT ...; LIMIT 500" → "SELECT ... LIMIT 500"
+    normalized = re.sub(r'\s*;\s*LIMIT\s+', ' LIMIT ', normalized, flags=re.IGNORECASE)
+    normalized = normalized.rstrip(';').strip()
     normalized = _replace_dataset_table_references(normalized, dataset_meta)
     normalized = _normalize_schema_literals(normalized, taxonomy)
+    normalized = _normalize_group_by_columns(normalized, taxonomy)
     return normalized
 
 
@@ -303,19 +389,32 @@ def build_error_stats_fallback_plan(
     group_field: str,
 ) -> QueryPlan | None:
     fields = {field.field_name: field for field in taxonomy}
-    required = [group_field, "success_flag", "first_error_interface_protocol", "first_error_cause"]
+    required = [group_field, "success_flag", "first_error_cause"]
     if any(name not in fields for name in required):
         return None
     table = quote_identifier(dataset_meta.physical_table_name)
     group_col = quote_identifier(group_field)
     success_col = quote_identifier("success_flag")
-    iface_col = quote_identifier("first_error_interface_protocol")
     cause_col = quote_identifier("first_error_cause")
+    selected_cols = [group_col]
+    group_cols = [group_col]
+    if "first_error_interface_protocol" in fields:
+        iface_col = quote_identifier("first_error_interface_protocol")
+        selected_cols.append(iface_col)
+        group_cols.append(iface_col)
+    selected_cols.append(cause_col)
+    group_cols.append(cause_col)
+
+    where_parts = [f"{success_col} = {sql_literal(fields['success_flag'], '0')}"]
+    if "attempt_flag" in fields:
+        attempt_col = quote_identifier("attempt_flag")
+        where_parts.insert(0, f"{attempt_col} = {sql_literal(fields['attempt_flag'], '1')}")
+
     sql = (
-        f"SELECT {group_col}, {iface_col}, {cause_col}, COUNT(*) as cnt "
+        f"SELECT {', '.join(selected_cols)}, COUNT(*) AS cnt "
         f"FROM {table} "
-        f"WHERE {success_col} = {sql_literal(fields['success_flag'], '0')} "
-        f"GROUP BY {group_col}, {iface_col}, {cause_col} "
+        f"WHERE {' AND '.join(where_parts)} "
+        f"GROUP BY {', '.join(group_cols)} "
         "ORDER BY cnt DESC LIMIT 50"
     )
     return QueryPlan(
@@ -384,10 +483,14 @@ Physical table name: {table}
 - role/category/importance/capabilities/aliases를 함께 참고해 사용자 표현과 실제 컬럼을 매핑
 - 비활성 컬럼은 사용자가 명시적으로 해당 field_name을 요구한 경우에만 보조적으로 사용
 - groupable=false 컬럼은 GROUP BY에 사용하지 말 것
+- 집계 SQL에서 SELECT에 포함한 일반 컬럼은 반드시 GROUP BY에도 모두 포함할 것
+- GROUP BY에 없는 일반 컬럼을 SELECT에 표시하려면 ANY_VALUE(field_name)를 사용할 것
 - filterable=false 컬럼은 WHERE 조건에 우선 사용하지 말 것
 - sortable/time_series capability가 있는 시간 컬럼을 timeline/추이 질문에 우선 사용
 - SQL은 반드시 한 줄(single line)로 작성, 줄바꾸음 금지
 - LIMIT은 반드시 포함, 최대 500
+- SQL에 세미콜론(;)을 포함하지 말 것
+- IMSI, IMEI 등 식별자는 반드시 원문 그대로 사용. Base64 값(예: 'T1Fj...==')의 '=='를 절대 제거하지 말 것
 - xDR 조사와 무관한 질문이면 intent를 "not_xdr"로 설정
 
 반드시 아래 JSON만 출력 (다른 텍스트 없이):
@@ -467,12 +570,41 @@ async def execute_plan(
     max_rows: int = 200,
 ) -> list[dict]:
     """Execute the DuckDB query via asyncio.to_thread()."""
-    from app.rca.duckdb_store import query_records
+    from app.qie.datasets.duckdb_store import query_records
     try:
         return await asyncio.to_thread(query_records, dataset_id, plan.sql, max_rows)
     except Exception as exc:
         logger.warning("DuckDB 쿼리 실행 실패 (dataset_id=%s): %s", dataset_id, exc)
         return []
+
+
+def _convert_timestamps(rows: list[dict]) -> list[dict]:
+    """
+    timestamp role 필드(microsecond epoch) 값을 사람이 읽을 수 있는
+    ISO datetime 문자열로 변환.
+    1e12 이상인 숫자 값을 timestamp로 간주.
+    """
+    from datetime import datetime, timezone
+    converted = []
+    for row in rows:
+        new_row = {}
+        for k, v in row.items():
+            if isinstance(v, (int, float)) and v > 1e12:
+                try:
+                    dt = datetime.fromtimestamp(v / 1_000_000, tz=timezone.utc)
+                    new_row[k] = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+                except Exception:
+                    new_row[k] = v
+            elif isinstance(v, str) and v.isdigit() and len(v) >= 16:
+                try:
+                    dt = datetime.fromtimestamp(int(v) / 1_000_000, tz=timezone.utc)
+                    new_row[k] = dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+                except Exception:
+                    new_row[k] = v
+            else:
+                new_row[k] = v
+        converted.append(new_row)
+    return converted
 
 
 def format_results(
@@ -483,22 +615,25 @@ def format_results(
     """Convert query rows to LLM-ready prompt text."""
     if not rows:
         return (
-            f"[xDR 조사 결과: {dataset_id}]\n"
-            "쿼리 조건에 해당하는 레코드가 없습니다.\n"
-            "[LLM 지시] 데이터가 없음을 한국어로 간단히 안내하세요."
+            f"[xDR \uc870\uc0ac \uacb0\uacfc: {dataset_id}]\n"
+            "\ucffc\ub9ac \uc870\uac74\uc5d0 \ud574\ub2f9\ud558\ub294 \ub808\ucf54\ub4dc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.\n"
+            "[LLM \uc9c0\uc2dc] \ub370\uc774\ud130\uac00 \uc5c6\uc74c\uc744 \ud55c\uad6d\uc5b4\ub85c \uac04\ub2e8\ud788 \uc548\ub0b4\ud558\uc138\uc694."
         )
 
+    # timestamp \uac12 \uc790\ub3d9 \ubcc0\ud658 (microsecond epoch \u2192 \uc0ac\ub78c\uc774 \uc77d\uc744 \uc218 \uc788\ub294 datetime)
+    display_rows = _convert_timestamps(rows)
+
     header = (
-        f"[xDR 조사 결과: {dataset_id}]\n"
-        f"조회 의도: {plan.description}\n"
-        f"건수: {len(rows)}건\n"
-        "[LLM 지시] 아래 데이터를 반드시 markdown 표(| 컬럼 | ... |) 형식으로 정리하여 답변하세요. "
-        "IMSI 등 해시값은 그대로 표시하되 인덱스 번호(1, 2, 3...)를 앞에 붙여 구분하세요. "
-        "건수(cnt)가 같으면 protocol/cause 기준으로 그룹핑하여 설명하세요.\n\n"
+        f"[xDR \uc870\uc0ac \uacb0\uacfc: {dataset_id}]\n"
+        f"\uc870\ud68c \uc758\ub3c4: {plan.description}\n"
+        f"\uac74\uc218: {len(rows)}\uac74\n"
+        "[LLM \uc9c0\uc2dc] \uc544\ub798 \ub370\uc774\ud130\ub97c \ubc18\ub4dc\uc2dc markdown \ud45c(| \ucef4\ub7fc | ... |) \ud615\uc2dd\uc73c\ub85c \uc815\ub9ac\ud558\uc5ec \ub2f5\ubcc0\ud558\uc138\uc694. "
+        "IMSI \ub4f1 \ud574\uc2dc\uac12\uc740 \uadf8\ub300\ub85c \ud45c\uc2dc\ud558\ub418 \uc778\ub371\uc2a4 \ubc88\ud638(1, 2, 3...)\ub97c \uc55e\uc5d0 \ubd99\uc5ec \uad6c\ubd84\ud558\uc138\uc694. "
+        "\uac74\uc218(cnt)\uac00 \uac19\uc73c\uba74 protocol/cause \uae30\uc900\uc73c\ub85c \uadf8\ub8f9\ud551\ud558\uc5ec \uc124\uba85\ud558\uc138\uc694.\n\n"
     )
-    if len(rows) <= 20:
-        rows_text = json.dumps(rows, ensure_ascii=False, indent=2)
+    if len(display_rows) <= 20:
+        rows_text = json.dumps(display_rows, ensure_ascii=False, indent=2)
     else:
-        rows_text = json.dumps(rows[:20], ensure_ascii=False, indent=2)
-        rows_text += f"\n... (총 {len(rows)}건 중 상위 20건 표시)"
+        rows_text = json.dumps(display_rows[:20], ensure_ascii=False, indent=2)
+        rows_text += f"\n... (\uc5d4 {len(rows)}\uac74 \uc911 \uc0c1\uc704 20\uac74 \ud45c\uc2dc)"
     return header + rows_text

@@ -9,8 +9,8 @@ import asyncio
 import logging
 from typing import Any
 
-from app.rca import duckdb_store
-from app.rca.spec_loader import FieldSpec
+from app.qie.datasets import duckdb_store
+from app.qie.schema.spec_loader import FieldSpec
 
 logger = logging.getLogger(__name__)
 

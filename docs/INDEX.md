@@ -12,6 +12,23 @@
 | 06 | 프론트엔드 API 스펙 | [06_프론트엔드_API_스펙.md](06_프론트엔드_API_스펙.md) | 프론트엔드 컴포넌트별 Backend API 호출 상세 |
 | 07 | Deterministic Reasoning Architecture | [07_Deterministic_Reasoning_Architecture.md](07_Deterministic_Reasoning_Architecture.md) | RCA 설계 철학, Reasoning 계층 구조, LLM Explainability 구조, 향후 방향성 |
 
+## QIE (Query Investigation Engine)
+
+| 문서 | 파일명 | 설명 |
+|------|--------|------|
+| QIE 아키텍처 | [qie/architecture.md](qie/architecture.md) | 전체 구조, 파이프라인, 디렉토리 |
+| QIE 파이프라인 | [qie/pipeline.md](qie/pipeline.md) | 상세 실행 흐름, 버그 수정 내역 |
+| Query Planner | [qie/planner.md](qie/planner.md) | NL→SQL 설계, 2단계 구조 |
+| Dataset Registry | [qie/dataset_registry.md](qie/dataset_registry.md) | 데이터셋 관리, DB 스키마 |
+| Schema & Taxonomy | [qie/schema_taxonomy.md](qie/schema_taxonomy.md) | xDR 필드 스키마, alias 관리 |
+| Debugging Guide | [qie/debugging.md](qie/debugging.md) | debug 패널, 문제 진단 |
+
+## RCA Engine
+
+| 문서 | 파일명 | 설명 |
+|------|--------|------|
+| RCA 아키텍처 | [rca/architecture.md](rca/architecture.md) | RCA vs QIE 역할, 파이프라인 |
+
 ## 설계 문서
 
 | 문서 | 파일명 | 설명 |

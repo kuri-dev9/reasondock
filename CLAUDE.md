@@ -59,7 +59,26 @@ Frontend (3000) → Backend (8000) → Ollama (11434)
 
 **상세 설계:** `docs/RCA_INVESTIGATION_WORKSPACE.md` 참조
 
-### 7. .env 파일 동기화 규칙
+### 7. QIE 아키텍처
+**QIE(Query Investigation Engine)는 `app/qie/` 레이어로 분리 예정.**
+
+현재 상태: `app/rca/` 내 혼재
+목표: `app/qie/` 레이어로 점진적 이동
+
+**역할 분리:**
+- QIE: dataset 저장/조회/SQL 실행/routing 판단
+- RCA: 인과 추론/원인 분석 (QIE 결과 기반)
+- UCE: context 압축/grounding policy
+- DPE: document preprocessing
+
+**파이프라인:**
+```
+사용자 프롬프트 → QIE routing → QIE SQL → RCA(선택) → UCE → LLM
+```
+
+**상세 설계:** `docs/qie/architecture.md` 참조
+
+### 8. .env 파일 동기화 규칙
 **`.env.linux` 또는 `.env.mac` 수정 시 반드시 두 파일 모두 동시에 수정한다.**
 - `OLLAMA_BASE_URL`, `DEFAULT_OLLAMA_MODEL`은 서버별로 다른 값 유지
 - 나머지 설정은 두 파일을 항상 동일하게 유지

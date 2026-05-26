@@ -13,7 +13,7 @@ from typing import Any
 
 import duckdb
 
-from app.rca.spec_loader import FieldSpec
+from app.qie.schema.spec_loader import FieldSpec
 
 
 _DB_PATH = Path("/app/rca_datasets/rca_datasets.duckdb")

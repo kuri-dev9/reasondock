@@ -5,7 +5,6 @@ interface Props {
   onSend: (message: string) => void;
   onCancel: () => void;
   onFileUpload: (file: File) => Promise<void>;
-  onRcaUpload: (file: File) => Promise<void>;
   onFileRemove: (id: number) => void;
   attachments: Attachment[];
   disabled: boolean;
@@ -14,16 +13,14 @@ interface Props {
   onUseUceChange: (enabled: boolean) => void;
 }
 
-export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload, onFileRemove, attachments, disabled, streaming, useUce, onUseUceChange }: Props) {
+export default function ChatInput({ onSend, onCancel, onFileUpload, onFileRemove, attachments, disabled, streaming, useUce, onUseUceChange }: Props) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [rcaUploading, setRcaUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+  const [dragActive] = useState(false);
 
   // dragActive는 더 이상 ChatInput에서 관리하지 않음 (App.tsx의 messages 영역으로 이동)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const rcaInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -61,24 +58,6 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
       alert(err.message || '파일 업로드 실패');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleRcaFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadRcaFile(file);
-    if (rcaInputRef.current) rcaInputRef.current.value = '';
-  };
-
-  const uploadRcaFile = async (file: File) => {
-    setRcaUploading(true);
-    try {
-      await onRcaUpload(file);
-    } catch (err: any) {
-      alert(err.message || 'RCA 분석 실패');
-    } finally {
-      setRcaUploading(false);
     }
   };
 
@@ -144,21 +123,6 @@ export default function ChatInput({ onSend, onCancel, onFileUpload, onRcaUpload,
           className="file-input-hidden"
           onChange={handleFileChange}
           accept=".txt,.md,.py,.js,.ts,.jsx,.tsx,.json,.csv,.html,.css,.xml,.yaml,.yml,.pdf,.docx,.xlsx,.xls,.hwp,.hwpx,.log,.sh,.sql,.java,.c,.cpp,.h,.go,.rs"
-        />
-        <button
-          className="rca-btn"
-          onClick={(e) => { e.stopPropagation(); rcaInputRef.current?.click(); }}
-          disabled={disabled || rcaUploading}
-          title="xDR RCA 분석"
-        >
-          {rcaUploading ? '분석중' : 'RCA'}
-        </button>
-        <input
-          ref={rcaInputRef}
-          type="file"
-          className="file-input-hidden"
-          onChange={handleRcaFileChange}
-          accept=".dat"
         />
         <textarea
           ref={textareaRef}

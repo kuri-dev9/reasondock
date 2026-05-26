@@ -14,7 +14,7 @@ import { useAttachments } from './hooks/useAttachments';
 import { useChat } from './hooks/useChat';
 import { useRca } from './hooks/useRca';
 import { Message, XdrSchemaProfile } from './types';
-import { createConversation, fetchActiveXdrSchemaProfile, fetchKnowledgeDocs, uploadAttachment } from './api';
+import { createConversation, fetchActiveXdrSchemaProfile, fetchKnowledgeDocs, uploadAttachment, fetchRcaDatasetSummary } from './api';
 import './App.css';
 
 function App() {
@@ -193,6 +193,66 @@ function App() {
     await _handleRcaUpload(file, convId, useUce, selectedXdrSchema?.id || null);
   };
 
+  const _formatDatasetSummary = (datasetId: string, summary: any): string => {
+    const overall = summary.overall || {};
+    const topFailures = (summary.top_failures || []).slice(0, 5);
+
+    let text = `## 📊 데이터셋 분석 결과\n\n`;
+    text += `**데이터셋:** ${datasetId}\n\n`;
+    text += `| 항목 | 값 |\n|---|---|\n`;
+    text += `| 총 레코드 | ${overall.total?.toLocaleString() ?? '-'} |\n`;
+    text += `| 시도 | ${overall.attempt?.toLocaleString() ?? '-'} |\n`;
+    text += `| 성공 | ${overall.success?.toLocaleString() ?? '-'} |\n`;
+    text += `| 실패 | ${overall.fail?.toLocaleString() ?? '-'} |\n`;
+    text += `| 실패율 | ${overall.fail_rate != null ? (overall.fail_rate * 100).toFixed(2) + '%' : '-'} |\n\n`;
+
+    if (topFailures.length > 0) {
+      text += `### 주요 실패 패턴\n\n`;
+      text += `| 순위 | 패턴 | 건수 |\n|---|---|---|\n`;
+      topFailures.forEach((f: any, i: number) => {
+        const key = f.key?.split('|').slice(0, 2).join(' › ') || '-';
+        text += `| ${i + 1} | ${key} | ${f.count?.toLocaleString() ?? '-'} |\n`;
+      });
+      text += '\n';
+    }
+
+    text += `> 데이터셋이 선택되었습니다. 이제 자연어로 xDR 조사를 시작하세요.`;
+    return text;
+  };
+
+  const handleDatasetUploadComplete = async (datasetId: string) => {
+    try {
+      const summary = await fetchRcaDatasetSummary(datasetId);
+      if (!summary) return;
+
+      let convId = activeConvId;
+      if (!convId) {
+        const conv = await createConversation('RCA 분석', selectedModel, currentSystemPrompt || null);
+        setConversations((prev) => [conv, ...prev]);
+        setActiveConvId(conv.id);
+        activeConvIdRef.current = conv.id;
+        setMessages([]);
+        convId = conv.id;
+      }
+
+      const summaryText = _formatDatasetSummary(datasetId, summary);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          conversation_id: convId as number,
+          role: 'assistant' as const,
+          content: summaryText,
+          created_at: new Date().toISOString(),
+          references: [],
+          metrics: null,
+        },
+      ]);
+    } catch {
+      // summary 없어도 무시
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <div className="app">
@@ -293,7 +353,6 @@ function App() {
           onSend={handleSend}
           onCancel={handleCancel}
           onFileUpload={handleFileUpload}
-          onRcaUpload={handleRcaUpload}
           onFileRemove={(id) => handleFileRemove(id, activeConvId)}
           attachments={attachments}
           disabled={streaming}
@@ -310,6 +369,8 @@ function App() {
         conversationId={activeConvId}
         selectedDatasetId={selectedDatasetId}
         onSelectDataset={setSelectedDatasetId}
+        onRcaUpload={handleRcaUpload}
+        onUploadComplete={handleDatasetUploadComplete}
       />
       <XdrSchemaPanel
         visible={xdrSchemaPanelOpen}

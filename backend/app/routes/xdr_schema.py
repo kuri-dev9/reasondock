@@ -10,8 +10,8 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models import ConversationDataset, RcaDataset, XdrFieldKeyword, XdrFieldSchema, XdrSchemaProfile
-from app.rca import dataset_manager
-from app.rca.spec_loader import FieldSpec, load_lte_call_kpi_spec
+from app.qie.datasets import dataset_manager
+from app.qie.schema.spec_loader import FieldSpec, load_lte_call_kpi_spec
 
 router = APIRouter(prefix="/api/rca/xdr-schema", tags=["xdr-schema"])
 logger = logging.getLogger(__name__)

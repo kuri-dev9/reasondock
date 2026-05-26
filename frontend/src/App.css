@@ -1304,28 +1304,6 @@ body {
   cursor: not-allowed;
 }
 
-.rca-btn {
-  min-width: 52px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 11px 10px;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 700;
-  transition: background 0.2s;
-}
-
-.rca-btn:hover:not(:disabled) {
-  background: var(--hover);
-}
-
-.rca-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .file-input-hidden {
   display: none;
 }
@@ -1365,6 +1343,33 @@ body {
 .knowledge-header h3 {
   font-size: 18px;
   margin: 0;
+}
+
+.rca-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rca-upload-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.rca-upload-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.rca-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .knowledge-close {
@@ -2318,6 +2323,35 @@ body {
   background: #fef2f2;
   color: #dc2626;
   border-color: #fecaca;
+}
+
+.rca-ds-detail-toggle {
+  margin-top: 8px;
+}
+
+.rca-ds-detail {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.rca-ds-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.rca-ds-detail-table th,
+.rca-ds-detail-table td {
+  text-align: left;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.rca-ds-detail-table th {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .rca-ds-checkbox {
